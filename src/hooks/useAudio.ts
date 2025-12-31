@@ -19,25 +19,46 @@ export function useAudio() {
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const playFreeTTS = useCallback(
-    (text: string, lang: "zh-CN" | "en-US") => {
-      if (voiceMuted || !window.speechSynthesis) return Promise.resolve();
+    (text: string, lang: "zh-CN" | "en-US"): Promise<void> => {
+      if (voiceMuted) return Promise.resolve();
+      
+      if (!window.speechSynthesis) {
+        console.warn("Speech synthesis not supported");
+        return Promise.resolve();
+      }
 
       return new Promise<void>((resolve) => {
+        // Cancel any ongoing speech
         window.speechSynthesis.cancel();
+        
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
         utterance.rate = voiceSpeed;
+        
+        // Try to find a voice for the language
+        const voices = window.speechSynthesis.getVoices();
+        const voice = voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+        if (voice) {
+          utterance.voice = voice;
+        }
+        
         utterance.onend = () => {
           setIsPlaying(false);
           resolve();
         };
-        utterance.onerror = () => {
+        utterance.onerror = (e) => {
+          console.warn("Speech synthesis error:", e);
           setIsPlaying(false);
           resolve();
         };
+        
         synthRef.current = utterance;
         setIsPlaying(true);
-        window.speechSynthesis.speak(utterance);
+        
+        // Small delay to ensure synthesis is ready
+        setTimeout(() => {
+          window.speechSynthesis.speak(utterance);
+        }, 50);
       });
     },
     [voiceMuted, voiceSpeed]
