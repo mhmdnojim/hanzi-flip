@@ -1,0 +1,173 @@
+import { useState, useCallback, useRef } from "react";
+import { VoiceType } from "@/types/vocabulary";
+import { supabase } from "@/integrations/supabase/client";
+
+const SOUND_EFFECTS = {
+  flip: "/sounds/flip.mp3",
+  correct: "/sounds/correct.mp3",
+  incorrect: "/sounds/incorrect.mp3",
+  navigate: "/sounds/navigate.mp3",
+};
+
+export function useAudio() {
+  const [voiceType, setVoiceType] = useState<VoiceType>("free");
+  const [voiceSpeed, setVoiceSpeed] = useState(1);
+  const [voiceMuted, setVoiceMuted] = useState(false);
+  const [sfxMuted, setSfxMuted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  const playFreeTTS = useCallback(
+    (text: string, lang: "zh-CN" | "en-US") => {
+      if (voiceMuted || !window.speechSynthesis) return Promise.resolve();
+
+      return new Promise<void>((resolve) => {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.rate = voiceSpeed;
+        utterance.onend = () => {
+          setIsPlaying(false);
+          resolve();
+        };
+        utterance.onerror = () => {
+          setIsPlaying(false);
+          resolve();
+        };
+        synthRef.current = utterance;
+        setIsPlaying(true);
+        window.speechSynthesis.speak(utterance);
+      });
+    },
+    [voiceMuted, voiceSpeed]
+  );
+
+  const playPremiumTTS = useCallback(
+    async (text: string, lang: "zh-CN" | "en-US") => {
+      if (voiceMuted) return;
+
+      try {
+        setIsPlaying(true);
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/text-to-speech`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ text, language: lang }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("TTS request failed");
+        }
+
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        return new Promise<void>((resolve) => {
+          if (audioRef.current) {
+            audioRef.current.pause();
+          }
+          const audio = new Audio(audioUrl);
+          audioRef.current = audio;
+          audio.onended = () => {
+            setIsPlaying(false);
+            URL.revokeObjectURL(audioUrl);
+            resolve();
+          };
+          audio.onerror = () => {
+            setIsPlaying(false);
+            URL.revokeObjectURL(audioUrl);
+            resolve();
+          };
+          audio.play();
+        });
+      } catch (error) {
+        console.error("Premium TTS error:", error);
+        setIsPlaying(false);
+        // Fallback to free TTS
+        return playFreeTTS(text, lang);
+      }
+    },
+    [voiceMuted, playFreeTTS]
+  );
+
+  const speak = useCallback(
+    (text: string, lang: "zh-CN" | "en-US") => {
+      if (voiceType === "premium") {
+        return playPremiumTTS(text, lang);
+      }
+      return playFreeTTS(text, lang);
+    },
+    [voiceType, playFreeTTS, playPremiumTTS]
+  );
+
+  const speakChinese = useCallback(
+    (text: string) => speak(text, "zh-CN"),
+    [speak]
+  );
+
+  const speakEnglish = useCallback(
+    (text: string) => speak(text, "en-US"),
+    [speak]
+  );
+
+  const stopSpeaking = useCallback(() => {
+    window.speechSynthesis?.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setIsPlaying(false);
+  }, []);
+
+  const playSoundEffect = useCallback(
+    (effect: keyof typeof SOUND_EFFECTS) => {
+      if (sfxMuted) return;
+      // Sound effects would be loaded from public folder
+      // For now, using Web Audio API beeps as fallback
+      const ctx = new AudioContext();
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      const frequencies: Record<string, number> = {
+        flip: 800,
+        correct: 1200,
+        incorrect: 300,
+        navigate: 600,
+      };
+      
+      oscillator.frequency.value = frequencies[effect] || 500;
+      oscillator.type = "sine";
+      gainNode.gain.value = 0.1;
+      
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.1);
+    },
+    [sfxMuted]
+  );
+
+  return {
+    voiceType,
+    setVoiceType,
+    voiceSpeed,
+    setVoiceSpeed,
+    voiceMuted,
+    setVoiceMuted,
+    sfxMuted,
+    setSfxMuted,
+    isPlaying,
+    speakChinese,
+    speakEnglish,
+    stopSpeaking,
+    playSoundEffect,
+  };
+}
