@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Flashcard } from "@/components/Flashcard";
 import { ProgressBar } from "@/components/ProgressBar";
-import { Toolbar } from "@/components/Toolbar";
+import { TopToolbar } from "@/components/TopToolbar";
 import { StudyStats } from "@/components/StudyStats";
 import { NavigationControls } from "@/components/NavigationControls";
 import { useVocabulary } from "@/hooks/useVocabulary";
@@ -114,6 +114,9 @@ const Index = () => {
     onShuffle: handleShuffle,
   });
 
+  // Calculate favorites count
+  const favoritesCount = vocabulary.words.filter((w) => w.favorite).length;
+
   if (!activeWord) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -123,110 +126,95 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-6xl mx-auto px-4 py-6">
-        {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <h1 className="text-3xl md:text-4xl font-bold text-gradient mb-2">
-            Chinese Flashcards
-          </h1>
-          <p className="text-muted-foreground">
-            {vocabulary.currentDeck.name} • {vocabulary.words.length} words
-          </p>
-        </motion.header>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container max-w-5xl mx-auto px-4 py-4">
+        {/* Top Toolbar */}
+        <TopToolbar
+          deckName={vocabulary.currentDeck.name}
+          decks={vocabulary.decks}
+          currentDeckId={vocabulary.currentDeckId}
+          onDeckChange={vocabulary.setCurrentDeckId}
+          onImport={handleImport}
+          favoritesCount={favoritesCount}
+          elapsedTime={studySession.formattedTime}
+          completionPercentage={studySession.completionPercentage}
+          showPinyin={showPinyin}
+          onTogglePinyin={() => setShowPinyin(!showPinyin)}
+          showChineseFirst={showChineseFirst}
+          onToggleChineseFirst={() => setShowChineseFirst(!showChineseFirst)}
+          fontSize={fontSize}
+          onFontSizeChange={setFontSize}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+          voiceType={audio.voiceType}
+          onVoiceTypeChange={audio.setVoiceType}
+          voiceMuted={audio.voiceMuted}
+          onToggleVoiceMuted={() => audio.setVoiceMuted(!audio.voiceMuted)}
+          sfxMuted={audio.sfxMuted}
+          onToggleSfxMuted={() => audio.setSfxMuted(!audio.sfxMuted)}
+          isShuffled={vocabulary.isShuffled}
+          onShuffle={handleShuffle}
+          onResetOrder={vocabulary.resetOrder}
+          onResetProgress={vocabulary.resetProgress}
+          autoplayMode={studySession.autoplayMode}
+          onAutoplayModeChange={studySession.setAutoplayMode}
+          isAutoplayActive={studySession.autoplayMode !== "off"}
+          onToggleAutoplay={() =>
+            studySession.setAutoplayMode(
+              studySession.autoplayMode === "off" ? "chinese" : "off"
+            )
+          }
+          nextDelay={studySession.nextDelay}
+          onNextDelayChange={studySession.setNextDelay}
+          languageGap={studySession.languageGap}
+          onLanguageGapChange={studySession.setLanguageGap}
+        />
 
-        <div className="grid lg:grid-cols-[1fr_320px] gap-8">
-          {/* Main Content */}
-          <div className="space-y-6">
-            {/* Stats */}
-            <StudyStats words={vocabulary.words} elapsedTime={studySession.formattedTime} />
+        {/* Progress Bar */}
+        <div className="mt-4">
+          <ProgressBar
+            current={studySession.currentIndex}
+            total={vocabulary.words.length}
+            percentage={studySession.completionPercentage}
+            onSeek={studySession.goToIndex}
+            correctCount={vocabulary.words.filter((w) => w.correctCount > 0).length}
+            incorrectCount={vocabulary.words.filter((w) => w.incorrectCount > 0).length}
+          />
+        </div>
 
-            {/* Progress */}
-            <ProgressBar
-              current={studySession.currentIndex}
-              total={vocabulary.words.length}
-              percentage={studySession.completionPercentage}
-              onSeek={studySession.goToIndex}
-            />
+        {/* Flashcard */}
+        <div className="mt-6">
+          <Flashcard
+            word={activeWord}
+            isFlipped={isFlipped}
+            onFlip={handleFlip}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            onToggleFavorite={() => vocabulary.toggleFavorite(activeWord.id)}
+            showPinyin={showPinyin}
+            showChineseFirst={showChineseFirst}
+            fontSize={fontSize}
+            onSpeakChinese={() => audio.speakChinese(activeWord.chinese)}
+            onSpeakEnglish={() => audio.speakEnglish(activeWord.english)}
+          />
+        </div>
 
-            {/* Flashcard */}
-            <Flashcard
-              word={activeWord}
-              isFlipped={isFlipped}
-              onFlip={handleFlip}
-              onNext={handleNext}
-              onPrevious={handlePrevious}
-              onToggleFavorite={() => vocabulary.toggleFavorite(activeWord.id)}
-              showPinyin={showPinyin}
-              showChineseFirst={showChineseFirst}
-              fontSize={fontSize}
-              onSpeakChinese={() => audio.speakChinese(activeWord.chinese)}
-              onSpeakEnglish={() => audio.speakEnglish(activeWord.english)}
-            />
-
-            {/* Navigation */}
-            <NavigationControls
-              onPrevious={handlePrevious}
-              onNext={handleNext}
-              onFlip={handleFlip}
-              onCorrect={handleCorrect}
-              onIncorrect={handleIncorrect}
-              isFlipped={isFlipped}
-            />
-          </div>
-
-          {/* Sidebar Toolbar */}
-          <aside className="lg:sticky lg:top-6 lg:self-start">
-            <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-              <h2 className="font-semibold text-lg mb-4 text-card-foreground">Settings</h2>
-              <Toolbar
-                showPinyin={showPinyin}
-                onTogglePinyin={() => setShowPinyin(!showPinyin)}
-                showChineseFirst={showChineseFirst}
-                onToggleChineseFirst={() => setShowChineseFirst(!showChineseFirst)}
-                fontSize={fontSize}
-                onFontSizeChange={setFontSize}
-                isDarkMode={isDarkMode}
-                onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-                voiceType={audio.voiceType}
-                onVoiceTypeChange={audio.setVoiceType}
-                voiceSpeed={audio.voiceSpeed}
-                onVoiceSpeedChange={audio.setVoiceSpeed}
-                voiceMuted={audio.voiceMuted}
-                onToggleVoiceMuted={() => audio.setVoiceMuted(!audio.voiceMuted)}
-                sfxMuted={audio.sfxMuted}
-                onToggleSfxMuted={() => audio.setSfxMuted(!audio.sfxMuted)}
-                autoplayMode={studySession.autoplayMode}
-                onAutoplayModeChange={studySession.setAutoplayMode}
-                nextDelay={studySession.nextDelay}
-                onNextDelayChange={studySession.setNextDelay}
-                languageGap={studySession.languageGap}
-                onLanguageGapChange={studySession.setLanguageGap}
-                isShuffled={vocabulary.isShuffled}
-                onShuffle={handleShuffle}
-                onResetOrder={vocabulary.resetOrder}
-                onResetProgress={vocabulary.resetProgress}
-                decks={vocabulary.decks}
-                currentDeckId={vocabulary.currentDeckId}
-                onDeckChange={vocabulary.setCurrentDeckId}
-                onImport={handleImport}
-                onExportFavorites={vocabulary.exportFavorites}
-                onExportProgress={vocabulary.exportProgressCSV}
-                storageMode={vocabulary.storageMode}
-                onStorageModeChange={vocabulary.setStorageMode}
-              />
-            </div>
-          </aside>
+        {/* Navigation */}
+        <div className="mt-6">
+          <NavigationControls
+            onPrevious={handlePrevious}
+            onNext={handleNext}
+            onFlip={handleFlip}
+            onCorrect={handleCorrect}
+            onIncorrect={handleIncorrect}
+            isFlipped={isFlipped}
+          />
         </div>
 
         {/* Footer */}
-        <footer className="text-center mt-12 pb-6">
+        <footer className="text-center mt-8 pb-4">
           <p className="text-sm text-muted-foreground">
-            This app designed by <span className="font-medium text-foreground">Mido Habibi</span>
+            Designed by <span className="font-medium text-foreground">Mido Habibi</span>
           </p>
         </footer>
       </div>
