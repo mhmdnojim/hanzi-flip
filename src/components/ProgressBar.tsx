@@ -1,14 +1,24 @@
 import { useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
+import { Check, X } from "lucide-react";
 
 interface ProgressBarProps {
   current: number;
   total: number;
   percentage: number;
   onSeek: (index: number) => void;
+  correctCount?: number;
+  incorrectCount?: number;
 }
 
-export function ProgressBar({ current, total, percentage, onSeek }: ProgressBarProps) {
+export function ProgressBar({ 
+  current, 
+  total, 
+  percentage, 
+  onSeek,
+  correctCount = 0,
+  incorrectCount = 0 
+}: ProgressBarProps) {
   const barRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -38,11 +48,20 @@ export function ProgressBar({ current, total, percentage, onSeek }: ProgressBarP
 
   return (
     <div className="w-full space-y-2">
-      <div className="flex justify-between text-sm text-muted-foreground">
-        <span>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">
           {current + 1} / {total}
         </span>
-        <span>{Math.round(percentage)}%</span>
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1 text-emerald-500 font-medium">
+            <Check className="w-4 h-4" />
+            {correctCount}
+          </span>
+          <span className="flex items-center gap-1 text-rose-500 font-medium">
+            <X className="w-4 h-4" />
+            {incorrectCount}
+          </span>
+        </div>
       </div>
       <div
         ref={barRef}
@@ -54,7 +73,7 @@ export function ProgressBar({ current, total, percentage, onSeek }: ProgressBarP
         onMouseMove={handleDrag}
       >
         <motion.div
-          className="absolute inset-y-0 left-0 gradient-primary rounded-full"
+          className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary via-violet-500 to-pink-500 rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
