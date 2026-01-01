@@ -10,8 +10,8 @@ export type RepeatMode =
 
 export type DisplayMode = "chinese" | "english" | "both";
 
-// Repeat count: number or "infinite"
-export type RepeatCount = 1 | 2 | 3 | 5 | "infinite";
+// Repeat count: 0 = infinite, any positive number = that many times
+export type RepeatCount = number;
 
 interface UseStudySessionProps {
   totalWords: number;
@@ -46,8 +46,8 @@ export function useStudySession({
   const [repeatMode, setRepeatModeState] = useState<RepeatMode>("off");
   const [isRepeatActive, setIsRepeatActive] = useState(false);
 
-  // Autoplay repeat: repeat current word N times before moving on
-  const [autoplayRepeatCount, setAutoplayRepeatCount] = useState<RepeatCount>(1);
+  // Autoplay repeat: repeat current word N times before moving on (0 = infinite)
+  const [autoplayRepeatCount, setAutoplayRepeatCount] = useState<RepeatCount>(0);
   const [isAutoplayRepeating, setIsAutoplayRepeating] = useState(false);
 
   // Display state - what should be shown on the card
@@ -275,9 +275,9 @@ export function useStudySession({
         const word = getWordAtIndex(index);
         if (!word) break;
 
-        // How many times to repeat this word
+        // How many times to repeat this word (0 = infinite)
         const repeatTimes = isAutoplayRepeating
-          ? autoplayRepeatCount === "infinite"
+          ? autoplayRepeatCount === 0
             ? Infinity
             : autoplayRepeatCount
           : 1;
@@ -305,7 +305,7 @@ export function useStudySession({
         if (playbackRunIdRef.current !== runId) break;
 
         // Move to next word (only if not in infinite repeat mode)
-        if (!isAutoplayRepeating || autoplayRepeatCount !== "infinite") {
+        if (!isAutoplayRepeating || autoplayRepeatCount !== 0) {
           index = (index + 1) % totalWords;
           setCurrentIndex(index);
         }
