@@ -554,88 +554,111 @@ function CardControls({
             ))}
           </div>
           
-          {/* Repeat button + count selector for autoplay - show when any autoplay mode is selected */}
+          {/* Repeat button + count selector - always visible, enabled when autoplay is active */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isAutoplayActive) {
+                    onToggleAutoplayRepeat();
+                  }
+                }}
+                disabled={!isAutoplayActive}
+                className={cn(
+                  "p-1.5 rounded-full transition-colors",
+                  !isAutoplayActive
+                    ? "bg-white/10 text-white/40 cursor-not-allowed"
+                    : isAutoplayRepeating
+                      ? "bg-amber-500 text-white"
+                      : "bg-white/20 text-white hover:bg-white/30"
+                )}
+              >
+                <Repeat className="w-3 h-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{!isAutoplayActive ? "Select an autoplay mode first" : isAutoplayRepeating ? "Stop repeating current word" : "Repeat current word"}</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Repeat count with +/- buttons - always visible */}
+          <div className={cn(
+            "flex items-center rounded-lg border overflow-hidden",
+            !isAutoplayActive
+              ? "border-white/20 bg-white/5"
+              : isAutoplayRepeating 
+                ? "border-amber-400 bg-amber-500/20" 
+                : "border-white/30 bg-white/10"
+          )}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleDecreaseRepeatCount}
+                  disabled={!isAutoplayActive}
+                  className={cn(
+                    "px-1.5 py-1 transition-colors",
+                    !isAutoplayActive
+                      ? "text-white/40 cursor-not-allowed"
+                      : "text-white hover:bg-white/20"
+                  )}
+                >
+                  <Minus className="w-3 h-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Decrease repeat count</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <span className={cn(
+              "px-2 py-1 text-xs font-bold min-w-[28px] text-center border-x",
+              !isAutoplayActive
+                ? "text-white/40 border-white/20"
+                : "text-white border-white/30"
+            )}>
+              {autoplayRepeatCount === 0 ? "∞" : autoplayRepeatCount}
+            </span>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleIncreaseRepeatCount}
+                  disabled={!isAutoplayActive}
+                  className={cn(
+                    "px-1.5 py-1 transition-colors",
+                    !isAutoplayActive
+                      ? "text-white/40 cursor-not-allowed"
+                      : "text-white hover:bg-white/20"
+                  )}
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Increase repeat count</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* Stop button - only when autoplay active */}
           {isAutoplayActive && (
-            <>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleAutoplayRepeat();
-                    }}
-                    className={cn(
-                      "p-1.5 rounded-full transition-colors",
-                      isAutoplayRepeating
-                        ? "bg-amber-500 text-white"
-                        : "bg-white/20 text-white hover:bg-white/30"
-                    )}
-                  >
-                    <Repeat className="w-3 h-3" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{isAutoplayRepeating ? "Stop repeating current word" : "Repeat current word"}</p>
-                </TooltipContent>
-              </Tooltip>
-
-              {/* Repeat count with +/- buttons */}
-              <div className={cn(
-                "flex items-center rounded-lg border overflow-hidden",
-                isAutoplayRepeating 
-                  ? "border-amber-400 bg-amber-500/20" 
-                  : "border-white/30 bg-white/10"
-              )}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={handleDecreaseRepeatCount}
-                      className="px-1.5 py-1 text-white hover:bg-white/20 transition-colors"
-                    >
-                      <Minus className="w-3 h-3" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Decrease repeat count</p>
-                  </TooltipContent>
-                </Tooltip>
-                
-                <span className="px-2 py-1 text-xs font-bold text-white min-w-[28px] text-center border-x border-white/30">
-                  {autoplayRepeatCount === 0 ? "∞" : autoplayRepeatCount}
-                </span>
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={handleIncreaseRepeatCount}
-                      className="px-1.5 py-1 text-white hover:bg-white/20 transition-colors"
-                    >
-                      <Plus className="w-3 h-3" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Increase repeat count</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAutoplayModeChange("off");
-                    }}
-                    className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors"
-                  >
-                    <Pause className="w-3 h-3" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Stop autoplay</p>
-                </TooltipContent>
-              </Tooltip>
-            </>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAutoplayModeChange("off");
+                  }}
+                  className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors"
+                >
+                  <Pause className="w-3 h-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Stop autoplay</p>
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>

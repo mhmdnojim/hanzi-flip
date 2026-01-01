@@ -67,6 +67,8 @@ export function useStudySession({
   // Store timing values in refs so async loops can access latest values
   const languageGapRef = useRef(languageGap);
   const nextDelayRef = useRef(nextDelay);
+  const autoplayRepeatCountRef = useRef(autoplayRepeatCount);
+  const isAutoplayRepeatingRef = useRef(isAutoplayRepeating);
 
   useEffect(() => {
     languageGapRef.current = languageGap;
@@ -75,6 +77,14 @@ export function useStudySession({
   useEffect(() => {
     nextDelayRef.current = nextDelay;
   }, [nextDelay]);
+
+  useEffect(() => {
+    autoplayRepeatCountRef.current = autoplayRepeatCount;
+  }, [autoplayRepeatCount]);
+
+  useEffect(() => {
+    isAutoplayRepeatingRef.current = isAutoplayRepeating;
+  }, [isAutoplayRepeating]);
 
   const clearPendingWait = useCallback(() => {
     if (timeoutRef.current) {
@@ -275,11 +285,11 @@ export function useStudySession({
         const word = getWordAtIndex(index);
         if (!word) break;
 
-        // How many times to repeat this word (0 = infinite)
-        const repeatTimes = isAutoplayRepeating
-          ? autoplayRepeatCount === 0
+        // How many times to repeat this word (0 = infinite) - use refs to get latest values
+        const repeatTimes = isAutoplayRepeatingRef.current
+          ? autoplayRepeatCountRef.current === 0
             ? Infinity
-            : autoplayRepeatCount
+            : autoplayRepeatCountRef.current
           : 1;
 
         let cycles = 0;
@@ -304,8 +314,8 @@ export function useStudySession({
         await wait(nextDelayRef.current * 1000);
         if (playbackRunIdRef.current !== runId) break;
 
-        // Move to next word (only if not in infinite repeat mode)
-        if (!isAutoplayRepeating || autoplayRepeatCount !== 0) {
+        // Move to next word (only if not in infinite repeat mode) - use refs
+        if (!isAutoplayRepeatingRef.current || autoplayRepeatCountRef.current !== 0) {
           index = (index + 1) % totalWords;
           setCurrentIndex(index);
         }
