@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, ChevronLeft, ChevronRight, Volume2, Play, Pause } from "lucide-react";
+import { Heart, ChevronLeft, ChevronRight, Volume2, Play, Pause, Repeat } from "lucide-react";
 import { VocabularyWord, AutoplayMode } from "@/types/vocabulary";
-import { RepeatMode, DisplayMode } from "@/hooks/useStudySession";
+import { RepeatMode, DisplayMode, RepeatCount } from "@/hooks/useStudySession";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -27,6 +27,11 @@ interface FlashcardProps {
   autoplayMode: AutoplayMode;
   onAutoplayModeChange: (mode: AutoplayMode) => void;
   isAutoplayActive: boolean;
+  // Autoplay repeat props
+  autoplayRepeatCount: RepeatCount;
+  onAutoplayRepeatCountChange: (count: RepeatCount) => void;
+  isAutoplayRepeating: boolean;
+  onToggleAutoplayRepeat: () => void;
   // Repeat props
   repeatMode: RepeatMode;
   onRepeatModeChange: (mode: RepeatMode) => void;
@@ -51,6 +56,10 @@ export function Flashcard({
   autoplayMode,
   onAutoplayModeChange,
   isAutoplayActive,
+  autoplayRepeatCount,
+  onAutoplayRepeatCountChange,
+  isAutoplayRepeating,
+  onToggleAutoplayRepeat,
   repeatMode,
   onRepeatModeChange,
   isRepeatActive,
@@ -214,6 +223,10 @@ export function Flashcard({
               autoplayMode={autoplayMode}
               onAutoplayModeChange={onAutoplayModeChange}
               isAutoplayActive={isAutoplayActive}
+              autoplayRepeatCount={autoplayRepeatCount}
+              onAutoplayRepeatCountChange={onAutoplayRepeatCountChange}
+              isAutoplayRepeating={isAutoplayRepeating}
+              onToggleAutoplayRepeat={onToggleAutoplayRepeat}
               repeatMode={repeatMode}
               onRepeatModeChange={onRepeatModeChange}
               isRepeatActive={isRepeatActive}
@@ -244,6 +257,10 @@ export function Flashcard({
                   autoplayMode={autoplayMode}
                   onAutoplayModeChange={onAutoplayModeChange}
                   isAutoplayActive={isAutoplayActive}
+                  autoplayRepeatCount={autoplayRepeatCount}
+                  onAutoplayRepeatCountChange={onAutoplayRepeatCountChange}
+                  isAutoplayRepeating={isAutoplayRepeating}
+                  onToggleAutoplayRepeat={onToggleAutoplayRepeat}
                   repeatMode={repeatMode}
                   onRepeatModeChange={onRepeatModeChange}
                   isRepeatActive={isRepeatActive}
@@ -269,6 +286,10 @@ export function Flashcard({
                   autoplayMode={autoplayMode}
                   onAutoplayModeChange={onAutoplayModeChange}
                   isAutoplayActive={isAutoplayActive}
+                  autoplayRepeatCount={autoplayRepeatCount}
+                  onAutoplayRepeatCountChange={onAutoplayRepeatCountChange}
+                  isAutoplayRepeating={isAutoplayRepeating}
+                  onToggleAutoplayRepeat={onToggleAutoplayRepeat}
                   repeatMode={repeatMode}
                   onRepeatModeChange={onRepeatModeChange}
                   isRepeatActive={isRepeatActive}
@@ -396,6 +417,10 @@ function CardControls({
   autoplayMode,
   onAutoplayModeChange,
   isAutoplayActive,
+  autoplayRepeatCount,
+  onAutoplayRepeatCountChange,
+  isAutoplayRepeating,
+  onToggleAutoplayRepeat,
   repeatMode,
   onRepeatModeChange,
   isRepeatActive,
@@ -403,6 +428,10 @@ function CardControls({
   autoplayMode: AutoplayMode;
   onAutoplayModeChange: (mode: AutoplayMode) => void;
   isAutoplayActive: boolean;
+  autoplayRepeatCount: RepeatCount;
+  onAutoplayRepeatCountChange: (count: RepeatCount) => void;
+  isAutoplayRepeating: boolean;
+  onToggleAutoplayRepeat: () => void;
   repeatMode: RepeatMode;
   onRepeatModeChange: (mode: RepeatMode) => void;
   isRepeatActive: boolean;
@@ -419,6 +448,14 @@ function CardControls({
     { mode: "english" as AutoplayMode, label: "EN", tooltip: "Autoplay English only" },
     { mode: "chinese-to-english" as AutoplayMode, label: "中→EN", tooltip: "Autoplay Chinese then English" },
     { mode: "english-to-chinese" as AutoplayMode, label: "EN→中", tooltip: "Autoplay English then Chinese" },
+  ];
+
+  const repeatCountOptions: { count: RepeatCount; label: string }[] = [
+    { count: 1, label: "1×" },
+    { count: 2, label: "2×" },
+    { count: 3, label: "3×" },
+    { count: 5, label: "5×" },
+    { count: "infinite", label: "∞" },
   ];
 
   return (
@@ -512,23 +549,81 @@ function CardControls({
               </Tooltip>
             ))}
           </div>
+          
+          {/* Repeat button + count selector for autoplay */}
           {isAutoplayActive && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAutoplayModeChange("off");
-                  }}
-                  className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors"
-                >
-                  <Pause className="w-3 h-3" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Stop autoplay</p>
-              </TooltipContent>
-            </Tooltip>
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleAutoplayRepeat();
+                    }}
+                    className={cn(
+                      "p-1.5 rounded-full transition-colors",
+                      isAutoplayRepeating
+                        ? "bg-amber-500 text-white"
+                        : "bg-white/20 text-white hover:bg-white/30"
+                    )}
+                  >
+                    <Repeat className="w-3 h-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isAutoplayRepeating ? "Stop repeating current word" : "Repeat current word"}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Repeat count selector */}
+              <div className={cn(
+                "flex rounded-lg border overflow-hidden",
+                isAutoplayRepeating 
+                  ? "border-amber-400 bg-amber-500/20" 
+                  : "border-white/30 bg-white/10"
+              )}>
+                {repeatCountOptions.map(({ count, label }) => (
+                  <Tooltip key={label}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAutoplayRepeatCountChange(count);
+                        }}
+                        className={cn(
+                          "px-2 py-1 text-xs font-bold transition-colors border-l border-white/30 first:border-l-0",
+                          autoplayRepeatCount === count
+                            ? "bg-amber-500 text-white"
+                            : "text-white hover:bg-white/20"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{count === "infinite" ? "Repeat infinitely" : `Repeat ${count} time${count > 1 ? "s" : ""}`}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAutoplayModeChange("off");
+                    }}
+                    className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors"
+                  >
+                    <Pause className="w-3 h-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Stop autoplay</p>
+                </TooltipContent>
+              </Tooltip>
+            </>
           )}
         </div>
       </div>

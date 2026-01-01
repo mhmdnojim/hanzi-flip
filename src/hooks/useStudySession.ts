@@ -10,6 +10,9 @@ export type RepeatMode =
 
 export type DisplayMode = "chinese" | "english" | "both";
 
+// Repeat count: number or "infinite"
+export type RepeatCount = 1 | 2 | 3 | 5 | "infinite";
+
 interface UseStudySessionProps {
   totalWords: number;
   onFlip: () => void;
@@ -39,9 +42,13 @@ export function useStudySession({
   const [autoplayMode, setAutoplayModeState] = useState<AutoplayMode>("off");
   const [isAutoplayActive, setIsAutoplayActive] = useState(false);
 
-  // Repeat state
+  // Repeat state (standalone repeat)
   const [repeatMode, setRepeatModeState] = useState<RepeatMode>("off");
   const [isRepeatActive, setIsRepeatActive] = useState(false);
+
+  // Autoplay repeat: repeat current word N times before moving on
+  const [autoplayRepeatCount, setAutoplayRepeatCount] = useState<RepeatCount>(1);
+  const [isAutoplayRepeating, setIsAutoplayRepeating] = useState(false);
 
   // Display state - what should be shown on the card
   const [displayMode, setDisplayMode] = useState<DisplayMode>("both");
@@ -144,6 +151,68 @@ export function useStudySession({
     }
   }, []);
 
+  // Play one cycle of a mode (chinese, english, or dual)
+  const playOneCycle = useCallback(
+    async (
+      mode: AutoplayMode | RepeatMode,
+      word: { chinese: string; english: string },
+      runId: number
+    ): Promise<boolean> => {
+      if (mode === "off") return true;
+
+      try {
+        switch (mode) {
+          case "chinese":
+            setDisplayMode("chinese");
+            setCurrentlySpoken("chinese");
+            await speakChinese(word.chinese);
+            break;
+
+          case "english":
+            setDisplayMode("english");
+            setCurrentlySpoken("english");
+            await speakEnglish(word.english);
+            break;
+
+          case "chinese-to-english":
+            setDisplayMode("chinese");
+            setCurrentlySpoken("chinese");
+            await speakChinese(word.chinese);
+            if (playbackRunIdRef.current !== runId) return false;
+
+            await wait(languageGapRef.current * 1000);
+            if (playbackRunIdRef.current !== runId) return false;
+
+            setDisplayMode("english");
+            setCurrentlySpoken("english");
+            await speakEnglish(word.english);
+            break;
+
+          case "english-to-chinese":
+            setDisplayMode("english");
+            setCurrentlySpoken("english");
+            await speakEnglish(word.english);
+            if (playbackRunIdRef.current !== runId) return false;
+
+            await wait(languageGapRef.current * 1000);
+            if (playbackRunIdRef.current !== runId) return false;
+
+            setDisplayMode("chinese");
+            setCurrentlySpoken("chinese");
+            await speakChinese(word.chinese);
+            break;
+        }
+
+        setCurrentlySpoken(null);
+        return playbackRunIdRef.current === runId;
+      } catch (error) {
+        console.error("Playback error:", error);
+        return false;
+      }
+    },
+    [speakChinese, speakEnglish, wait]
+  );
+
   // Set autoplay mode (mutually exclusive with repeat)
   const setAutoplayMode = useCallback(
     (mode: AutoplayMode) => {
@@ -153,6 +222,7 @@ export function useStudySession({
         // Deactivate repeat
         setRepeatModeState("off");
         setIsRepeatActive(false);
+        setIsAutoplayRepeating(false);
       }
 
       setAutoplayModeState(mode);
@@ -171,6 +241,7 @@ export function useStudySession({
         // Deactivate autoplay
         setAutoplayModeState("off");
         setIsAutoplayActive(false);
+        setIsAutoplayRepeating(false);
       }
 
       setRepeatModeState(mode);
@@ -179,6 +250,15 @@ export function useStudySession({
     },
     [cancelPlayback, syncDisplayModeForRepeat]
   );
+
+  // Toggle autoplay repeat during autoplay
+  const toggleAutoplayRepeat = useCallback(() => {
+    if (!isAutoplayActive) return;
+    
+    cancelPlayback();
+    setIsAutoplayRepeating((prev) => !prev);
+    setPlaybackRestartKey((k) => k + 1);
+  }, [isAutoplayActive, cancelPlayback]);
 
   // Autoplay logic
   useEffect(() => {
@@ -195,70 +275,46 @@ export function useStudySession({
         const word = getWordAtIndex(index);
         if (!word) break;
 
-        try {
-          switch (autoplayMode) {
-            case "chinese":
-              setDisplayMode("chinese");
-              setCurrentlySpoken("chinese");
-              await speakChinese(word.chinese);
-              break;
+        // How many times to repeat this word
+        const repeatTimes = isAutoplayRepeating
+          ? autoplayRepeatCount === "infinite"
+            ? Infinity
+            : autoplayRepeatCount
+          : 1;
 
-            case "english":
-              setDisplayMode("english");
-              setCurrentlySpoken("english");
-              await speakEnglish(word.english);
-              break;
+        let cycles = 0;
+        while (cycles < repeatTimes && playbackRunIdRef.current === runId) {
+          const success = await playOneCycle(autoplayMode, word, runId);
+          if (!success) break;
 
-            case "chinese-to-english":
-              setDisplayMode("chinese");
-              setCurrentlySpoken("chinese");
-              await speakChinese(word.chinese);
-              if (playbackRunIdRef.current !== runId) break;
+          cycles++;
 
-              await wait(languageGapRef.current * 1000);
-              if (playbackRunIdRef.current !== runId) break;
-
-              setDisplayMode("english");
-              setCurrentlySpoken("english");
-              await speakEnglish(word.english);
-              break;
-
-            case "english-to-chinese":
-              setDisplayMode("english");
-              setCurrentlySpoken("english");
-              await speakEnglish(word.english);
-              if (playbackRunIdRef.current !== runId) break;
-
-              await wait(languageGapRef.current * 1000);
-              if (playbackRunIdRef.current !== runId) break;
-
-              setDisplayMode("chinese");
-              setCurrentlySpoken("chinese");
-              await speakChinese(word.chinese);
-              break;
+          // Wait between cycles (if more cycles to go or moving to next word)
+          if (playbackRunIdRef.current !== runId) break;
+          
+          if (cycles < repeatTimes) {
+            // Gap between repeat cycles
+            await wait(languageGapRef.current * 1000);
           }
+        }
 
-          if (playbackRunIdRef.current !== runId) break;
+        if (playbackRunIdRef.current !== runId) break;
 
-          setCurrentlySpoken(null);
+        // Wait before next word
+        await wait(nextDelayRef.current * 1000);
+        if (playbackRunIdRef.current !== runId) break;
 
-          // Wait before next word
-          await wait(nextDelayRef.current * 1000);
-          if (playbackRunIdRef.current !== runId) break;
-
-          // Move to next word
+        // Move to next word (only if not in infinite repeat mode)
+        if (!isAutoplayRepeating || autoplayRepeatCount !== "infinite") {
           index = (index + 1) % totalWords;
           setCurrentIndex(index);
+        }
 
-          // Reset display for next word based on mode
-          if (autoplayMode === "chinese" || autoplayMode === "chinese-to-english") {
-            setDisplayMode("chinese");
-          } else {
-            setDisplayMode("english");
-          }
-        } catch (error) {
-          console.error("Autoplay error:", error);
-          break;
+        // Reset display for next word based on mode
+        if (autoplayMode === "chinese" || autoplayMode === "chinese-to-english") {
+          setDisplayMode("chinese");
+        } else {
+          setDisplayMode("english");
         }
       }
 
@@ -278,15 +334,16 @@ export function useStudySession({
     totalWords,
     currentIndex,
     getWordAtIndex,
-    speakChinese,
-    speakEnglish,
+    playOneCycle,
     wait,
     bumpPlaybackRunId,
     clearPendingWait,
     playbackRestartKey,
+    isAutoplayRepeating,
+    autoplayRepeatCount,
   ]);
 
-  // Repeat logic - loops on current word
+  // Repeat logic - loops on current word (standalone repeat mode)
   useEffect(() => {
     if (!isRepeatActive || repeatMode === "off" || totalWords <= 0) return;
 
@@ -300,68 +357,18 @@ export function useStudySession({
         const word = getWordAtIndex(index);
         if (!word) break;
 
-        try {
-          switch (repeatMode) {
-            case "chinese":
-              setDisplayMode("chinese");
-              setCurrentlySpoken("chinese");
-              await speakChinese(word.chinese);
-              break;
+        const success = await playOneCycle(repeatMode, word, runId);
+        if (!success) break;
 
-            case "english":
-              setDisplayMode("english");
-              setCurrentlySpoken("english");
-              await speakEnglish(word.english);
-              break;
+        // Wait before next repeat cycle
+        await wait(languageGapRef.current * 1000);
+        if (playbackRunIdRef.current !== runId) break;
 
-            case "chinese-to-english":
-              setDisplayMode("chinese");
-              setCurrentlySpoken("chinese");
-              await speakChinese(word.chinese);
-              if (playbackRunIdRef.current !== runId) break;
-
-              // Next translation gap
-              await wait(languageGapRef.current * 1000);
-              if (playbackRunIdRef.current !== runId) break;
-
-              setDisplayMode("english");
-              setCurrentlySpoken("english");
-              await speakEnglish(word.english);
-              break;
-
-            case "english-to-chinese":
-              setDisplayMode("english");
-              setCurrentlySpoken("english");
-              await speakEnglish(word.english);
-              if (playbackRunIdRef.current !== runId) break;
-
-              // Next translation gap
-              await wait(languageGapRef.current * 1000);
-              if (playbackRunIdRef.current !== runId) break;
-
-              setDisplayMode("chinese");
-              setCurrentlySpoken("chinese");
-              await speakChinese(word.chinese);
-              break;
-          }
-
-          if (playbackRunIdRef.current !== runId) break;
-
-          setCurrentlySpoken(null);
-
-          // Repeat delay uses the same "Next translation" timing
-          await wait(languageGapRef.current * 1000);
-          if (playbackRunIdRef.current !== runId) break;
-
-          // Reset display for next loop based on mode
-          if (repeatMode === "chinese" || repeatMode === "chinese-to-english") {
-            setDisplayMode("chinese");
-          } else {
-            setDisplayMode("english");
-          }
-        } catch (error) {
-          console.error("Repeat error:", error);
-          break;
+        // Reset display for next loop based on mode
+        if (repeatMode === "chinese" || repeatMode === "chinese-to-english") {
+          setDisplayMode("chinese");
+        } else {
+          setDisplayMode("english");
         }
       }
 
@@ -381,8 +388,7 @@ export function useStudySession({
     totalWords,
     currentIndex,
     getWordAtIndex,
-    speakChinese,
-    speakEnglish,
+    playOneCycle,
     wait,
     bumpPlaybackRunId,
     clearPendingWait,
@@ -452,6 +458,7 @@ export function useStudySession({
     setIsAutoplayActive(false);
     setRepeatModeState("off");
     setIsRepeatActive(false);
+    setIsAutoplayRepeating(false);
     setDisplayMode("both");
     setCurrentlySpoken(null);
   }, [cancelPlayback]);
@@ -465,6 +472,12 @@ export function useStudySession({
     autoplayMode,
     setAutoplayMode,
     isAutoplayActive,
+
+    // Autoplay repeat
+    autoplayRepeatCount,
+    setAutoplayRepeatCount,
+    isAutoplayRepeating,
+    toggleAutoplayRepeat,
 
     // Repeat
     repeatMode,
