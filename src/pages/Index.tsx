@@ -203,6 +203,10 @@ const Index = () => {
             autoplayMode={studySession.autoplayMode}
             onAutoplayModeChange={studySession.setAutoplayMode}
             isAutoplayActive={studySession.isAutoplayActive}
+            autoplayRepeatCount={studySession.autoplayRepeatCount}
+            onAutoplayRepeatCountChange={studySession.setAutoplayRepeatCount}
+            isAutoplayRepeating={studySession.isAutoplayRepeating}
+            onToggleAutoplayRepeat={studySession.toggleAutoplayRepeat}
             repeatMode={studySession.repeatMode}
             onRepeatModeChange={studySession.setRepeatMode}
             isRepeatActive={studySession.isRepeatActive}
