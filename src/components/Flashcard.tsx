@@ -79,9 +79,6 @@ export function Flashcard({
   };
 
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Don't handle clicks if autoplay or repeat is active
-    if (isAutoplayActive || isRepeatActive) return;
-    
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = rect.width;
@@ -91,17 +88,13 @@ export function Flashcard({
       onPrevious();
     } else if (percentage > 0.9) {
       onNext();
-    } else {
+    } else if (!isAutoplayActive && !isRepeatActive) {
+      // Only flip if not in playback mode
       onFlip();
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isAutoplayActive || isRepeatActive) {
-      setHoveredZone(null);
-      return;
-    }
-    
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = rect.width;
@@ -149,41 +142,30 @@ export function Flashcard({
   return (
     <div className="perspective-1000 w-full max-w-2xl mx-auto">
       <motion.div
-        className={cn(
-          "relative w-full aspect-[3/2]",
-          !isPlaybackMode && "cursor-pointer"
-        )}
+        className="relative w-full aspect-[3/2] cursor-pointer"
         onClick={handleCardClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoveredZone(null)}
       >
-        {/* Navigation zones indicators */}
-        <AnimatePresence>
-          {hoveredZone === "left" && !isPlaybackMode && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute left-0 top-0 bottom-0 w-[10%] flex items-center justify-center z-20 pointer-events-none"
-            >
-              <div className="bg-foreground/10 rounded-full p-3">
-                <ChevronLeft className="w-8 h-8 text-foreground" />
-              </div>
-            </motion.div>
-          )}
-          {hoveredZone === "right" && !isPlaybackMode && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute right-0 top-0 bottom-0 w-[10%] flex items-center justify-center z-20 pointer-events-none"
-            >
-              <div className="bg-foreground/10 rounded-full p-3">
-                <ChevronRight className="w-8 h-8 text-foreground" />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Navigation zones indicators - always visible at 50% opacity, full on hover */}
+        <motion.div
+          initial={{ opacity: 0.5 }}
+          animate={{ opacity: hoveredZone === "left" ? 1 : 0.5 }}
+          className="absolute left-0 top-0 bottom-0 w-[10%] flex items-center justify-center z-20 pointer-events-none"
+        >
+          <div className="bg-foreground/10 rounded-full p-3">
+            <ChevronLeft className="w-8 h-8 text-white" />
+          </div>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0.5 }}
+          animate={{ opacity: hoveredZone === "right" ? 1 : 0.5 }}
+          className="absolute right-0 top-0 bottom-0 w-[10%] flex items-center justify-center z-20 pointer-events-none"
+        >
+          <div className="bg-foreground/10 rounded-full p-3">
+            <ChevronRight className="w-8 h-8 text-white" />
+          </div>
+        </motion.div>
 
         {/* Card - single view for playback, 3D flip for manual */}
         {isPlaybackMode ? (
@@ -436,13 +418,6 @@ function CardControls({
   onRepeatModeChange: (mode: RepeatMode) => void;
   isRepeatActive: boolean;
 }) {
-  const repeatOptions = [
-    { mode: "chinese" as RepeatMode, label: "中", tooltip: "Repeat Chinese only" },
-    { mode: "english" as RepeatMode, label: "EN", tooltip: "Repeat English only" },
-    { mode: "chinese-to-english" as RepeatMode, label: "中→EN", tooltip: "Repeat Chinese then English" },
-    { mode: "english-to-chinese" as RepeatMode, label: "EN→中", tooltip: "Repeat English then Chinese" },
-  ];
-
   const autoplayOptions = [
     { mode: "chinese" as AutoplayMode, label: "中", tooltip: "Autoplay Chinese only" },
     { mode: "english" as AutoplayMode, label: "EN", tooltip: "Autoplay English only" },
@@ -464,70 +439,11 @@ function CardControls({
 
   return (
     <TooltipProvider>
-      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-30">
-        {/* Repeat Controls */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-white/70 font-medium">Repeat:</span>
-          <div className={cn(
-            "flex rounded-lg border overflow-hidden",
-            isRepeatActive 
-              ? "border-emerald-400 bg-emerald-500/20" 
-              : "border-white/30 bg-white/10"
-          )}>
-            {repeatOptions.map(({ mode, label, tooltip }) => (
-              <Tooltip key={mode}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Toggle: if same mode clicked, turn off; otherwise activate new mode
-                      onRepeatModeChange(repeatMode === mode ? "off" : mode);
-                    }}
-                    className={cn(
-                      "px-2.5 py-1 text-xs font-bold transition-colors border-l border-white/30 first:border-l-0",
-                      repeatMode === mode && isRepeatActive
-                        ? "bg-emerald-500 text-white"
-                        : "text-white hover:bg-white/20"
-                    )}
-                  >
-                    {label}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{tooltip}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
-          {isRepeatActive && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRepeatModeChange("off");
-                  }}
-                  className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors"
-                >
-                  <Pause className="w-3 h-3" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Stop repeat</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </div>
-
-        {/* Autoplay Controls */}
+      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-start z-30">
+        {/* Autoplay Controls - now on left side */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-white/70 font-medium">Autoplay:</span>
-          <div className={cn(
-            "flex rounded-lg border overflow-hidden",
-            isAutoplayActive 
-              ? "border-emerald-400 bg-emerald-500/20" 
-              : "border-white/30 bg-white/10"
-          )}>
+          <div className="flex rounded-lg border border-white/30 bg-white/10 overflow-hidden">
             {autoplayOptions.map(({ mode, label, tooltip }) => (
               <Tooltip key={mode}>
                 <TooltipTrigger asChild>
