@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, ChevronLeft, ChevronRight, Volume2, Play, Pause } from "lucide-react";
 import { VocabularyWord, AutoplayMode } from "@/types/vocabulary";
+import { RepeatMode, DisplayMode } from "@/hooks/useStudySession";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -9,8 +10,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-type RepeatMode = "off" | "chinese" | "english" | "chinese-to-english" | "english-to-chinese";
 
 interface FlashcardProps {
   word: VocabularyWord;
@@ -24,13 +23,17 @@ interface FlashcardProps {
   fontSize: number;
   onSpeakChinese: () => void;
   onSpeakEnglish: () => void;
-  onRepeatChinese: () => Promise<void>;
-  onRepeatEnglish: () => Promise<void>;
-  onRepeatBoth: () => Promise<void>;
-  onRepeatEnglishToChinese: () => Promise<void>;
   // Autoplay props
   autoplayMode: AutoplayMode;
   onAutoplayModeChange: (mode: AutoplayMode) => void;
+  isAutoplayActive: boolean;
+  // Repeat props
+  repeatMode: RepeatMode;
+  onRepeatModeChange: (mode: RepeatMode) => void;
+  isRepeatActive: boolean;
+  // Display mode - what to show on card
+  displayMode: DisplayMode;
+  currentlySpoken: "chinese" | "english" | null;
 }
 
 export function Flashcard({
@@ -45,44 +48,17 @@ export function Flashcard({
   fontSize,
   onSpeakChinese,
   onSpeakEnglish,
-  onRepeatChinese,
-  onRepeatEnglish,
-  onRepeatBoth,
-  onRepeatEnglishToChinese,
   autoplayMode,
   onAutoplayModeChange,
+  isAutoplayActive,
+  repeatMode,
+  onRepeatModeChange,
+  isRepeatActive,
+  displayMode,
+  currentlySpoken,
 }: FlashcardProps) {
   const [hoveredZone, setHoveredZone] = useState<"left" | "right" | null>(null);
   const [justFavorited, setJustFavorited] = useState(false);
-  const [repeatMode, setRepeatMode] = useState<RepeatMode>("off");
-  const [isRepeating, setIsRepeating] = useState(false);
-
-  const handleRepeat = async (mode: RepeatMode) => {
-    if (mode === "off" || isRepeating) return;
-    
-    setRepeatMode(mode);
-    setIsRepeating(true);
-    
-    try {
-      switch (mode) {
-        case "chinese":
-          await onRepeatChinese();
-          break;
-        case "english":
-          await onRepeatEnglish();
-          break;
-        case "chinese-to-english":
-          await onRepeatBoth();
-          break;
-        case "english-to-chinese":
-          await onRepeatEnglishToChinese();
-          break;
-      }
-    } finally {
-      setIsRepeating(false);
-      setRepeatMode("off");
-    }
-  };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -94,6 +70,9 @@ export function Flashcard({
   };
 
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Don't handle clicks if autoplay or repeat is active
+    if (isAutoplayActive || isRepeatActive) return;
+    
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = rect.width;
@@ -109,6 +88,11 @@ export function Flashcard({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isAutoplayActive || isRepeatActive) {
+      setHoveredZone(null);
+      return;
+    }
+    
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = rect.width;
@@ -123,29 +107,50 @@ export function Flashcard({
     }
   };
 
-  const showFront = showChineseFirst ? !isFlipped : isFlipped;
-  const frontContent = showChineseFirst ? (
-    <ChineseContent word={word} showPinyin={showPinyin} fontSize={fontSize} onSpeak={onSpeakChinese} />
-  ) : (
-    <EnglishContent word={word} fontSize={fontSize} onSpeak={onSpeakEnglish} />
-  );
-  const backContent = showChineseFirst ? (
-    <EnglishContent word={word} fontSize={fontSize} onSpeak={onSpeakEnglish} />
-  ) : (
-    <ChineseContent word={word} showPinyin={showPinyin} fontSize={fontSize} onSpeak={onSpeakChinese} />
-  );
+  // Determine what content to show based on displayMode
+  const getContentToShow = () => {
+    // If autoplay or repeat is active, show based on displayMode
+    if (isAutoplayActive || isRepeatActive) {
+      if (displayMode === "chinese") {
+        return {
+          showChinese: true,
+          showEnglish: false,
+        };
+      } else if (displayMode === "english") {
+        return {
+          showChinese: false,
+          showEnglish: true,
+        };
+      }
+    }
+    
+    // Default behavior based on flip state
+    const showFront = showChineseFirst ? !isFlipped : isFlipped;
+    return {
+      showChinese: showChineseFirst ? showFront : !showFront,
+      showEnglish: showChineseFirst ? !showFront : showFront,
+    };
+  };
+
+  const { showChinese, showEnglish } = getContentToShow();
+
+  // For autoplay/repeat mode, we show a single-sided card
+  const isPlaybackMode = isAutoplayActive || isRepeatActive;
 
   return (
     <div className="perspective-1000 w-full max-w-2xl mx-auto">
       <motion.div
-        className="relative w-full aspect-[3/2] cursor-pointer"
+        className={cn(
+          "relative w-full aspect-[3/2]",
+          !isPlaybackMode && "cursor-pointer"
+        )}
         onClick={handleCardClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoveredZone(null)}
       >
         {/* Navigation zones indicators */}
         <AnimatePresence>
-          {hoveredZone === "left" && (
+          {hoveredZone === "left" && !isPlaybackMode && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -157,7 +162,7 @@ export function Flashcard({
               </div>
             </motion.div>
           )}
-          {hoveredZone === "right" && (
+          {hoveredZone === "right" && !isPlaybackMode && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -171,52 +176,107 @@ export function Flashcard({
           )}
         </AnimatePresence>
 
-        {/* 3D Card */}
-        <motion.div
-          className="relative w-full h-full preserve-3d"
-          animate={{ rotateY: isFlipped ? 180 : 0 }}
-          transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
-        >
-          {/* Front */}
-          <div className="absolute inset-0 backface-hidden">
-            <div className="w-full h-full rounded-2xl gradient-primary shadow-2xl p-8 flex flex-col items-center justify-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
-              <FavoriteButton
-                isFavorite={word.favorite}
-                onClick={handleFavoriteClick}
-                justFavorited={justFavorited}
-              />
-              {showFront ? frontContent : backContent}
-              <CardControls
-                repeatMode={repeatMode}
-                isRepeating={isRepeating}
-                onRepeat={handleRepeat}
-                autoplayMode={autoplayMode}
-                onAutoplayModeChange={onAutoplayModeChange}
-              />
-            </div>
+        {/* Card - single view for playback, 3D flip for manual */}
+        {isPlaybackMode ? (
+          // Single-sided card for playback mode
+          <div className={cn(
+            "w-full h-full rounded-2xl shadow-2xl p-8 flex flex-col items-center justify-center relative overflow-hidden",
+            showChinese ? "gradient-primary" : "gradient-accent"
+          )}>
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+            <FavoriteButton
+              isFavorite={word.favorite}
+              onClick={handleFavoriteClick}
+              justFavorited={justFavorited}
+            />
+            
+            {/* Speaking indicator */}
+            {currentlySpoken && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="absolute top-4 left-4 flex items-center gap-2 bg-white/20 rounded-full px-3 py-1"
+              >
+                <Volume2 className="w-4 h-4 text-white animate-pulse" />
+                <span className="text-xs text-white font-medium">
+                  {currentlySpoken === "chinese" ? "Speaking Chinese" : "Speaking English"}
+                </span>
+              </motion.div>
+            )}
+            
+            {showChinese ? (
+              <ChineseContent word={word} showPinyin={showPinyin} fontSize={fontSize} onSpeak={onSpeakChinese} />
+            ) : (
+              <EnglishContent word={word} fontSize={fontSize} onSpeak={onSpeakEnglish} />
+            )}
+            
+            <CardControls
+              autoplayMode={autoplayMode}
+              onAutoplayModeChange={onAutoplayModeChange}
+              isAutoplayActive={isAutoplayActive}
+              repeatMode={repeatMode}
+              onRepeatModeChange={onRepeatModeChange}
+              isRepeatActive={isRepeatActive}
+            />
           </div>
+        ) : (
+          // 3D flip card for manual mode
+          <motion.div
+            className="relative w-full h-full preserve-3d"
+            animate={{ rotateY: isFlipped ? 180 : 0 }}
+            transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
+          >
+            {/* Front */}
+            <div className="absolute inset-0 backface-hidden">
+              <div className="w-full h-full rounded-2xl gradient-primary shadow-2xl p-8 flex flex-col items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+                <FavoriteButton
+                  isFavorite={word.favorite}
+                  onClick={handleFavoriteClick}
+                  justFavorited={justFavorited}
+                />
+                {showChineseFirst ? (
+                  <ChineseContent word={word} showPinyin={showPinyin} fontSize={fontSize} onSpeak={onSpeakChinese} />
+                ) : (
+                  <EnglishContent word={word} fontSize={fontSize} onSpeak={onSpeakEnglish} />
+                )}
+                <CardControls
+                  autoplayMode={autoplayMode}
+                  onAutoplayModeChange={onAutoplayModeChange}
+                  isAutoplayActive={isAutoplayActive}
+                  repeatMode={repeatMode}
+                  onRepeatModeChange={onRepeatModeChange}
+                  isRepeatActive={isRepeatActive}
+                />
+              </div>
+            </div>
 
-          {/* Back */}
-          <div className="absolute inset-0 backface-hidden rotate-y-180">
-            <div className="w-full h-full rounded-2xl gradient-accent shadow-2xl p-8 flex flex-col items-center justify-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
-              <FavoriteButton
-                isFavorite={word.favorite}
-                onClick={handleFavoriteClick}
-                justFavorited={justFavorited}
-              />
-              {showFront ? backContent : frontContent}
-              <CardControls
-                repeatMode={repeatMode}
-                isRepeating={isRepeating}
-                onRepeat={handleRepeat}
-                autoplayMode={autoplayMode}
-                onAutoplayModeChange={onAutoplayModeChange}
-              />
+            {/* Back */}
+            <div className="absolute inset-0 backface-hidden rotate-y-180">
+              <div className="w-full h-full rounded-2xl gradient-accent shadow-2xl p-8 flex flex-col items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+                <FavoriteButton
+                  isFavorite={word.favorite}
+                  onClick={handleFavoriteClick}
+                  justFavorited={justFavorited}
+                />
+                {showChineseFirst ? (
+                  <EnglishContent word={word} fontSize={fontSize} onSpeak={onSpeakEnglish} />
+                ) : (
+                  <ChineseContent word={word} showPinyin={showPinyin} fontSize={fontSize} onSpeak={onSpeakChinese} />
+                )}
+                <CardControls
+                  autoplayMode={autoplayMode}
+                  onAutoplayModeChange={onAutoplayModeChange}
+                  isAutoplayActive={isAutoplayActive}
+                  repeatMode={repeatMode}
+                  onRepeatModeChange={onRepeatModeChange}
+                  isRepeatActive={isRepeatActive}
+                />
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );
@@ -333,17 +393,19 @@ function FavoriteButton({
 }
 
 function CardControls({
-  repeatMode,
-  isRepeating,
-  onRepeat,
   autoplayMode,
   onAutoplayModeChange,
+  isAutoplayActive,
+  repeatMode,
+  onRepeatModeChange,
+  isRepeatActive,
 }: {
-  repeatMode: RepeatMode;
-  isRepeating: boolean;
-  onRepeat: (mode: RepeatMode) => void;
   autoplayMode: AutoplayMode;
   onAutoplayModeChange: (mode: AutoplayMode) => void;
+  isAutoplayActive: boolean;
+  repeatMode: RepeatMode;
+  onRepeatModeChange: (mode: RepeatMode) => void;
+  isRepeatActive: boolean;
 }) {
   const repeatOptions = [
     { mode: "chinese" as RepeatMode, label: "中", tooltip: "Repeat Chinese only" },
@@ -365,50 +427,24 @@ function CardControls({
         {/* Repeat Controls */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-white/70 font-medium">Repeat:</span>
-          <div className="flex rounded-lg border border-white/30 overflow-hidden bg-white/10">
+          <div className={cn(
+            "flex rounded-lg border overflow-hidden",
+            isRepeatActive 
+              ? "border-emerald-400 bg-emerald-500/20" 
+              : "border-white/30 bg-white/10"
+          )}>
             {repeatOptions.map(({ mode, label, tooltip }) => (
               <Tooltip key={mode}>
                 <TooltipTrigger asChild>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onRepeat(mode);
-                    }}
-                    disabled={isRepeating}
-                    className={cn(
-                      "px-2.5 py-1 text-xs font-bold transition-colors border-l border-white/30 first:border-l-0",
-                      repeatMode === mode && isRepeating
-                        ? "bg-white/40 text-white"
-                        : "text-white hover:bg-white/20",
-                      isRepeating && repeatMode !== mode && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    {label}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{tooltip}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
-        </div>
-
-        {/* Autoplay Controls */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-white/70 font-medium">Autoplay:</span>
-          <div className="flex rounded-lg border border-white/30 overflow-hidden bg-white/10">
-            {autoplayOptions.map(({ mode, label, tooltip }) => (
-              <Tooltip key={mode}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAutoplayModeChange(autoplayMode === mode ? "off" : mode);
+                      // Toggle: if same mode clicked, turn off; otherwise activate new mode
+                      onRepeatModeChange(repeatMode === mode ? "off" : mode);
                     }}
                     className={cn(
                       "px-2.5 py-1 text-xs font-bold transition-colors border-l border-white/30 first:border-l-0",
-                      autoplayMode === mode
+                      repeatMode === mode && isRepeatActive
                         ? "bg-emerald-500 text-white"
                         : "text-white hover:bg-white/20"
                     )}
@@ -422,7 +458,61 @@ function CardControls({
               </Tooltip>
             ))}
           </div>
-          {autoplayMode !== "off" && (
+          {isRepeatActive && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRepeatModeChange("off");
+                  }}
+                  className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors"
+                >
+                  <Pause className="w-3 h-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Stop repeat</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+
+        {/* Autoplay Controls */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-white/70 font-medium">Autoplay:</span>
+          <div className={cn(
+            "flex rounded-lg border overflow-hidden",
+            isAutoplayActive 
+              ? "border-emerald-400 bg-emerald-500/20" 
+              : "border-white/30 bg-white/10"
+          )}>
+            {autoplayOptions.map(({ mode, label, tooltip }) => (
+              <Tooltip key={mode}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Toggle: if same mode clicked, turn off; otherwise activate new mode
+                      onAutoplayModeChange(autoplayMode === mode ? "off" : mode);
+                    }}
+                    className={cn(
+                      "px-2.5 py-1 text-xs font-bold transition-colors border-l border-white/30 first:border-l-0",
+                      autoplayMode === mode && isAutoplayActive
+                        ? "bg-emerald-500 text-white"
+                        : "text-white hover:bg-white/20"
+                    )}
+                  >
+                    {label}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{tooltip}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+          {isAutoplayActive && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
