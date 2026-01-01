@@ -196,6 +196,13 @@ const Index = () => {
             fontSize={fontSize}
             onSpeakChinese={() => audio.speakChinese(activeWord.chinese)}
             onSpeakEnglish={() => audio.speakEnglish(activeWord.english)}
+            onRepeatChinese={() => audio.speakChinese(activeWord.chinese)}
+            onRepeatEnglish={() => audio.speakEnglish(activeWord.english)}
+            onRepeatBoth={async () => {
+              await audio.speakChinese(activeWord.chinese);
+              await new Promise((r) => setTimeout(r, 500));
+              await audio.speakEnglish(activeWord.english);
+            }}
           />
         </div>
 

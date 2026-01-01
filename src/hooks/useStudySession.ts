@@ -101,10 +101,11 @@ export function useStudySession({
           return;
         }
 
-        // Schedule next word
+        // Schedule next word - actually advance the index
         autoplayRef.current = setTimeout(() => {
           isAutoplayingRef.current = false;
           if (!autoplayCancelledRef.current) {
+            setCurrentIndex((prev) => (prev + 1) % totalWords);
             onNext();
           }
         }, nextDelay * 1000);
@@ -125,7 +126,7 @@ export function useStudySession({
         autoplayRef.current = null;
       }
     };
-  }, [autoplayMode, currentIndex, nextDelay, languageGap, isFlipped]);
+  }, [autoplayMode, currentIndex, nextDelay, languageGap, isFlipped, totalWords]);
 
   const goToNext = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % totalWords);

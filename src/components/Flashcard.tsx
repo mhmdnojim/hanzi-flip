@@ -1,8 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, ChevronLeft, ChevronRight, Volume2 } from "lucide-react";
+import { Heart, ChevronLeft, ChevronRight, Volume2, Repeat } from "lucide-react";
 import { VocabularyWord } from "@/types/vocabulary";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface FlashcardProps {
   word: VocabularyWord;
@@ -16,6 +22,9 @@ interface FlashcardProps {
   fontSize: number;
   onSpeakChinese: () => void;
   onSpeakEnglish: () => void;
+  onRepeatChinese: () => void;
+  onRepeatEnglish: () => void;
+  onRepeatBoth: () => void;
 }
 
 export function Flashcard({
@@ -30,6 +39,9 @@ export function Flashcard({
   fontSize,
   onSpeakChinese,
   onSpeakEnglish,
+  onRepeatChinese,
+  onRepeatEnglish,
+  onRepeatBoth,
 }: FlashcardProps) {
   const [hoveredZone, setHoveredZone] = useState<"left" | "right" | null>(null);
   const [justFavorited, setJustFavorited] = useState(false);
@@ -137,6 +149,11 @@ export function Flashcard({
                 justFavorited={justFavorited}
               />
               {showFront ? frontContent : backContent}
+              <RepeatButtons
+                onRepeatChinese={onRepeatChinese}
+                onRepeatEnglish={onRepeatEnglish}
+                onRepeatBoth={onRepeatBoth}
+              />
             </div>
           </div>
 
@@ -150,6 +167,11 @@ export function Flashcard({
                 justFavorited={justFavorited}
               />
               {showFront ? backContent : frontContent}
+              <RepeatButtons
+                onRepeatChinese={onRepeatChinese}
+                onRepeatEnglish={onRepeatEnglish}
+                onRepeatBoth={onRepeatBoth}
+              />
             </div>
           </div>
         </motion.div>
@@ -239,22 +261,98 @@ function FavoriteButton({
   justFavorited: boolean;
 }) {
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "absolute top-4 right-4 p-2 rounded-full transition-all z-30",
-        isFavorite
-          ? "bg-destructive/20 text-destructive"
-          : "bg-white/20 text-white/60 hover:text-white"
-      )}
-    >
-      <Heart
-        className={cn(
-          "w-6 h-6 transition-transform",
-          isFavorite && "fill-current",
-          justFavorited && "animate-pulse-favorite"
-        )}
-      />
-    </button>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={onClick}
+            className={cn(
+              "absolute top-4 right-4 p-2 rounded-full transition-all z-30",
+              isFavorite
+                ? "bg-destructive/20 text-destructive"
+                : "bg-white/20 text-white/60 hover:text-white"
+            )}
+          >
+            <Heart
+              className={cn(
+                "w-6 h-6 transition-transform",
+                isFavorite && "fill-current",
+                justFavorited && "animate-pulse-favorite"
+              )}
+            />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function RepeatButtons({
+  onRepeatChinese,
+  onRepeatEnglish,
+  onRepeatBoth,
+}: {
+  onRepeatChinese: () => void;
+  onRepeatEnglish: () => void;
+  onRepeatBoth: () => void;
+}) {
+  return (
+    <TooltipProvider>
+      <div className="absolute bottom-4 left-4 flex gap-2 z-30">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRepeatChinese();
+              }}
+              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors text-white"
+            >
+              <span className="text-sm font-bold">中</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Repeat Chinese pronunciation</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRepeatEnglish();
+              }}
+              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors text-white"
+            >
+              <span className="text-sm font-bold">EN</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Repeat English pronunciation</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRepeatBoth();
+              }}
+              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors text-white"
+            >
+              <Repeat className="w-4 h-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Repeat both Chinese and English</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   );
 }
