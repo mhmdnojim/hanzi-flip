@@ -23,26 +23,33 @@ const Index = () => {
   const vocabulary = useVocabulary();
   const audio = useAudio();
 
-  const currentWord = vocabulary.words[0];
-
   const handleFlip = useCallback(() => {
     setIsFlipped((prev) => !prev);
     audio.playSoundEffect("flip");
   }, [audio]);
 
+  // State for timing controls (lifted here to avoid circular dependency)
+  const [nextDelay, setNextDelay] = useState(3);
+  const [languageGap, setLanguageGap] = useState(1.5);
+
   const studySession = useStudySession({
     totalWords: vocabulary.words.length,
-    onNext: () => {
-      setIsFlipped(false);
-    },
     onFlip: handleFlip,
     speakChinese: audio.speakChinese,
     speakEnglish: audio.speakEnglish,
-    getCurrentWord: () => vocabulary.words[studySession.currentIndex] || null,
+    getCurrentWord: useCallback(() => vocabulary.words[0] || null, [vocabulary.words]),
     isFlipped,
+    languageGap,
+    nextDelay,
   });
 
   const activeWord = vocabulary.words[studySession.currentIndex];
+  
+  // Update getCurrentWord to use current index
+  const getCurrentWordForSession = useCallback(
+    () => vocabulary.words[studySession.currentIndex] || null,
+    [vocabulary.words, studySession.currentIndex]
+  );
 
   const handleNext = useCallback(() => {
     studySession.goToNext();
@@ -158,16 +165,16 @@ const Index = () => {
           onResetProgress={vocabulary.resetProgress}
           autoplayMode={studySession.autoplayMode}
           onAutoplayModeChange={studySession.setAutoplayMode}
-          isAutoplayActive={studySession.autoplayMode !== "off"}
+          isAutoplayActive={studySession.isAutoplayActive}
           onToggleAutoplay={() =>
             studySession.setAutoplayMode(
               studySession.autoplayMode === "off" ? "chinese" : "off"
             )
           }
-          nextDelay={studySession.nextDelay}
-          onNextDelayChange={studySession.setNextDelay}
-          languageGap={studySession.languageGap}
-          onLanguageGapChange={studySession.setLanguageGap}
+          nextDelay={nextDelay}
+          onNextDelayChange={setNextDelay}
+          languageGap={languageGap}
+          onLanguageGapChange={setLanguageGap}
         />
 
         {/* Progress Bar */}
@@ -196,20 +203,14 @@ const Index = () => {
             fontSize={fontSize}
             onSpeakChinese={() => audio.speakChinese(activeWord.chinese)}
             onSpeakEnglish={() => audio.speakEnglish(activeWord.english)}
-            onRepeatChinese={() => audio.speakChinese(activeWord.chinese)}
-            onRepeatEnglish={() => audio.speakEnglish(activeWord.english)}
-            onRepeatBoth={async () => {
-              await audio.speakChinese(activeWord.chinese);
-              await new Promise((r) => setTimeout(r, 500));
-              await audio.speakEnglish(activeWord.english);
-            }}
-            onRepeatEnglishToChinese={async () => {
-              await audio.speakEnglish(activeWord.english);
-              await new Promise((r) => setTimeout(r, 500));
-              await audio.speakChinese(activeWord.chinese);
-            }}
             autoplayMode={studySession.autoplayMode}
             onAutoplayModeChange={studySession.setAutoplayMode}
+            isAutoplayActive={studySession.isAutoplayActive}
+            repeatMode={studySession.repeatMode}
+            onRepeatModeChange={studySession.setRepeatMode}
+            isRepeatActive={studySession.isRepeatActive}
+            displayMode={studySession.displayMode}
+            currentlySpoken={studySession.currentlySpoken}
           />
         </div>
 
