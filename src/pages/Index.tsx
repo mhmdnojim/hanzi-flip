@@ -208,6 +208,8 @@ const Index = () => {
               await new Promise((r) => setTimeout(r, 500));
               await audio.speakChinese(activeWord.chinese);
             }}
+            autoplayMode={studySession.autoplayMode}
+            onAutoplayModeChange={studySession.setAutoplayMode}
           />
         </div>
 
