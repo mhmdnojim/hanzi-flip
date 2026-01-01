@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, ChevronLeft, ChevronRight, Volume2, Repeat } from "lucide-react";
-import { VocabularyWord } from "@/types/vocabulary";
+import { Heart, ChevronLeft, ChevronRight, Volume2, Play, Pause } from "lucide-react";
+import { VocabularyWord, AutoplayMode } from "@/types/vocabulary";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -9,6 +9,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+type RepeatMode = "off" | "chinese" | "english" | "chinese-to-english" | "english-to-chinese";
 
 interface FlashcardProps {
   word: VocabularyWord;
@@ -22,10 +24,13 @@ interface FlashcardProps {
   fontSize: number;
   onSpeakChinese: () => void;
   onSpeakEnglish: () => void;
-  onRepeatChinese: () => void;
-  onRepeatEnglish: () => void;
-  onRepeatBoth: () => void;
-  onRepeatEnglishToChinese: () => void;
+  onRepeatChinese: () => Promise<void>;
+  onRepeatEnglish: () => Promise<void>;
+  onRepeatBoth: () => Promise<void>;
+  onRepeatEnglishToChinese: () => Promise<void>;
+  // Autoplay props
+  autoplayMode: AutoplayMode;
+  onAutoplayModeChange: (mode: AutoplayMode) => void;
 }
 
 export function Flashcard({
@@ -44,9 +49,40 @@ export function Flashcard({
   onRepeatEnglish,
   onRepeatBoth,
   onRepeatEnglishToChinese,
+  autoplayMode,
+  onAutoplayModeChange,
 }: FlashcardProps) {
   const [hoveredZone, setHoveredZone] = useState<"left" | "right" | null>(null);
   const [justFavorited, setJustFavorited] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>("off");
+  const [isRepeating, setIsRepeating] = useState(false);
+
+  const handleRepeat = async (mode: RepeatMode) => {
+    if (mode === "off" || isRepeating) return;
+    
+    setRepeatMode(mode);
+    setIsRepeating(true);
+    
+    try {
+      switch (mode) {
+        case "chinese":
+          await onRepeatChinese();
+          break;
+        case "english":
+          await onRepeatEnglish();
+          break;
+        case "chinese-to-english":
+          await onRepeatBoth();
+          break;
+        case "english-to-chinese":
+          await onRepeatEnglishToChinese();
+          break;
+      }
+    } finally {
+      setIsRepeating(false);
+      setRepeatMode("off");
+    }
+  };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -151,11 +187,12 @@ export function Flashcard({
                 justFavorited={justFavorited}
               />
               {showFront ? frontContent : backContent}
-              <RepeatButtons
-                onRepeatChinese={onRepeatChinese}
-                onRepeatEnglish={onRepeatEnglish}
-                onRepeatBoth={onRepeatBoth}
-                onRepeatEnglishToChinese={onRepeatEnglishToChinese}
+              <CardControls
+                repeatMode={repeatMode}
+                isRepeating={isRepeating}
+                onRepeat={handleRepeat}
+                autoplayMode={autoplayMode}
+                onAutoplayModeChange={onAutoplayModeChange}
               />
             </div>
           </div>
@@ -170,11 +207,12 @@ export function Flashcard({
                 justFavorited={justFavorited}
               />
               {showFront ? backContent : frontContent}
-              <RepeatButtons
-                onRepeatChinese={onRepeatChinese}
-                onRepeatEnglish={onRepeatEnglish}
-                onRepeatBoth={onRepeatBoth}
-                onRepeatEnglishToChinese={onRepeatEnglishToChinese}
+              <CardControls
+                repeatMode={repeatMode}
+                isRepeating={isRepeating}
+                onRepeat={handleRepeat}
+                autoplayMode={autoplayMode}
+                onAutoplayModeChange={onAutoplayModeChange}
               />
             </div>
           </div>
@@ -294,89 +332,114 @@ function FavoriteButton({
   );
 }
 
-function RepeatButtons({
-  onRepeatChinese,
-  onRepeatEnglish,
-  onRepeatBoth,
-  onRepeatEnglishToChinese,
+function CardControls({
+  repeatMode,
+  isRepeating,
+  onRepeat,
+  autoplayMode,
+  onAutoplayModeChange,
 }: {
-  onRepeatChinese: () => void;
-  onRepeatEnglish: () => void;
-  onRepeatBoth: () => void;
-  onRepeatEnglishToChinese: () => void;
+  repeatMode: RepeatMode;
+  isRepeating: boolean;
+  onRepeat: (mode: RepeatMode) => void;
+  autoplayMode: AutoplayMode;
+  onAutoplayModeChange: (mode: AutoplayMode) => void;
 }) {
+  const repeatOptions = [
+    { mode: "chinese" as RepeatMode, label: "中", tooltip: "Repeat Chinese only" },
+    { mode: "english" as RepeatMode, label: "EN", tooltip: "Repeat English only" },
+    { mode: "chinese-to-english" as RepeatMode, label: "中→EN", tooltip: "Repeat Chinese then English" },
+    { mode: "english-to-chinese" as RepeatMode, label: "EN→中", tooltip: "Repeat English then Chinese" },
+  ];
+
+  const autoplayOptions = [
+    { mode: "chinese" as AutoplayMode, label: "中", tooltip: "Autoplay Chinese only" },
+    { mode: "english" as AutoplayMode, label: "EN", tooltip: "Autoplay English only" },
+    { mode: "chinese-to-english" as AutoplayMode, label: "中→EN", tooltip: "Autoplay Chinese then English" },
+    { mode: "english-to-chinese" as AutoplayMode, label: "EN→中", tooltip: "Autoplay English then Chinese" },
+  ];
+
   return (
     <TooltipProvider>
-      <div className="absolute bottom-4 left-4 flex items-center gap-2 z-30">
-        <span className="text-xs text-white/70 font-medium">Repeat:</span>
-        <div className="flex rounded-lg border border-white/30 overflow-hidden bg-white/10">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRepeatChinese();
-                }}
-                className="px-2.5 py-1 text-xs font-bold text-white hover:bg-white/20 transition-colors"
-              >
-                中
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Repeat Chinese only</p>
-            </TooltipContent>
-          </Tooltip>
+      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-30">
+        {/* Repeat Controls */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-white/70 font-medium">Repeat:</span>
+          <div className="flex rounded-lg border border-white/30 overflow-hidden bg-white/10">
+            {repeatOptions.map(({ mode, label, tooltip }) => (
+              <Tooltip key={mode}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRepeat(mode);
+                    }}
+                    disabled={isRepeating}
+                    className={cn(
+                      "px-2.5 py-1 text-xs font-bold transition-colors border-l border-white/30 first:border-l-0",
+                      repeatMode === mode && isRepeating
+                        ? "bg-white/40 text-white"
+                        : "text-white hover:bg-white/20",
+                      isRepeating && repeatMode !== mode && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    {label}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{tooltip}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </div>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRepeatEnglish();
-                }}
-                className="px-2.5 py-1 text-xs font-bold text-white hover:bg-white/20 transition-colors border-l border-white/30"
-              >
-                EN
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Repeat English only</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRepeatBoth();
-                }}
-                className="px-2.5 py-1 text-xs font-bold text-white hover:bg-white/20 transition-colors border-l border-white/30"
-              >
-                中→EN
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Repeat Chinese then English</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRepeatEnglishToChinese();
-                }}
-                className="px-2.5 py-1 text-xs font-bold text-white hover:bg-white/20 transition-colors border-l border-white/30"
-              >
-                EN→中
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Repeat English then Chinese</p>
-            </TooltipContent>
-          </Tooltip>
+        {/* Autoplay Controls */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-white/70 font-medium">Autoplay:</span>
+          <div className="flex rounded-lg border border-white/30 overflow-hidden bg-white/10">
+            {autoplayOptions.map(({ mode, label, tooltip }) => (
+              <Tooltip key={mode}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAutoplayModeChange(autoplayMode === mode ? "off" : mode);
+                    }}
+                    className={cn(
+                      "px-2.5 py-1 text-xs font-bold transition-colors border-l border-white/30 first:border-l-0",
+                      autoplayMode === mode
+                        ? "bg-emerald-500 text-white"
+                        : "text-white hover:bg-white/20"
+                    )}
+                  >
+                    {label}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{tooltip}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+          {autoplayMode !== "off" && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAutoplayModeChange("off");
+                  }}
+                  className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors"
+                >
+                  <Pause className="w-3 h-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Stop autoplay</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
     </TooltipProvider>
