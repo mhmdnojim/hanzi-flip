@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, ChevronLeft, ChevronRight, Volume2, Play, Pause, Repeat } from "lucide-react";
+import { Heart, ChevronLeft, ChevronRight, Volume2, Play, Pause, Repeat, Plus, Minus } from "lucide-react";
 import { VocabularyWord, AutoplayMode } from "@/types/vocabulary";
 import { RepeatMode, DisplayMode, RepeatCount } from "@/hooks/useStudySession";
 import { cn } from "@/lib/utils";
@@ -450,13 +450,17 @@ function CardControls({
     { mode: "english-to-chinese" as AutoplayMode, label: "EN→中", tooltip: "Autoplay English then Chinese" },
   ];
 
-  const repeatCountOptions: { count: RepeatCount; label: string }[] = [
-    { count: 1, label: "1×" },
-    { count: 2, label: "2×" },
-    { count: 3, label: "3×" },
-    { count: 5, label: "5×" },
-    { count: "infinite", label: "∞" },
-  ];
+  const handleIncreaseRepeatCount = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAutoplayRepeatCountChange(autoplayRepeatCount + 1);
+  };
+
+  const handleDecreaseRepeatCount = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (autoplayRepeatCount > 0) {
+      onAutoplayRepeatCountChange(autoplayRepeatCount - 1);
+    }
+  };
 
   return (
     <TooltipProvider>
@@ -550,7 +554,7 @@ function CardControls({
             ))}
           </div>
           
-          {/* Repeat button + count selector for autoplay */}
+          {/* Repeat button + count selector for autoplay - show when any autoplay mode is selected */}
           {isAutoplayActive && (
             <>
               <Tooltip>
@@ -575,36 +579,44 @@ function CardControls({
                 </TooltipContent>
               </Tooltip>
 
-              {/* Repeat count selector */}
+              {/* Repeat count with +/- buttons */}
               <div className={cn(
-                "flex rounded-lg border overflow-hidden",
+                "flex items-center rounded-lg border overflow-hidden",
                 isAutoplayRepeating 
                   ? "border-amber-400 bg-amber-500/20" 
                   : "border-white/30 bg-white/10"
               )}>
-                {repeatCountOptions.map(({ count, label }) => (
-                  <Tooltip key={label}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAutoplayRepeatCountChange(count);
-                        }}
-                        className={cn(
-                          "px-2 py-1 text-xs font-bold transition-colors border-l border-white/30 first:border-l-0",
-                          autoplayRepeatCount === count
-                            ? "bg-amber-500 text-white"
-                            : "text-white hover:bg-white/20"
-                        )}
-                      >
-                        {label}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{count === "infinite" ? "Repeat infinitely" : `Repeat ${count} time${count > 1 ? "s" : ""}`}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleDecreaseRepeatCount}
+                      className="px-1.5 py-1 text-white hover:bg-white/20 transition-colors"
+                    >
+                      <Minus className="w-3 h-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Decrease repeat count</p>
+                  </TooltipContent>
+                </Tooltip>
+                
+                <span className="px-2 py-1 text-xs font-bold text-white min-w-[28px] text-center border-x border-white/30">
+                  {autoplayRepeatCount === 0 ? "∞" : autoplayRepeatCount}
+                </span>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleIncreaseRepeatCount}
+                      className="px-1.5 py-1 text-white hover:bg-white/20 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Increase repeat count</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
 
               <Tooltip>
