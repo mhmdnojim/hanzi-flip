@@ -203,6 +203,11 @@ const Index = () => {
               await new Promise((r) => setTimeout(r, 500));
               await audio.speakEnglish(activeWord.english);
             }}
+            onRepeatEnglishToChinese={async () => {
+              await audio.speakEnglish(activeWord.english);
+              await new Promise((r) => setTimeout(r, 500));
+              await audio.speakChinese(activeWord.chinese);
+            }}
           />
         </div>
 

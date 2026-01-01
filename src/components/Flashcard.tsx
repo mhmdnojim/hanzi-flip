@@ -25,6 +25,7 @@ interface FlashcardProps {
   onRepeatChinese: () => void;
   onRepeatEnglish: () => void;
   onRepeatBoth: () => void;
+  onRepeatEnglishToChinese: () => void;
 }
 
 export function Flashcard({
@@ -42,6 +43,7 @@ export function Flashcard({
   onRepeatChinese,
   onRepeatEnglish,
   onRepeatBoth,
+  onRepeatEnglishToChinese,
 }: FlashcardProps) {
   const [hoveredZone, setHoveredZone] = useState<"left" | "right" | null>(null);
   const [justFavorited, setJustFavorited] = useState(false);
@@ -153,6 +155,7 @@ export function Flashcard({
                 onRepeatChinese={onRepeatChinese}
                 onRepeatEnglish={onRepeatEnglish}
                 onRepeatBoth={onRepeatBoth}
+                onRepeatEnglishToChinese={onRepeatEnglishToChinese}
               />
             </div>
           </div>
@@ -171,6 +174,7 @@ export function Flashcard({
                 onRepeatChinese={onRepeatChinese}
                 onRepeatEnglish={onRepeatEnglish}
                 onRepeatBoth={onRepeatBoth}
+                onRepeatEnglishToChinese={onRepeatEnglishToChinese}
               />
             </div>
           </div>
@@ -294,64 +298,86 @@ function RepeatButtons({
   onRepeatChinese,
   onRepeatEnglish,
   onRepeatBoth,
+  onRepeatEnglishToChinese,
 }: {
   onRepeatChinese: () => void;
   onRepeatEnglish: () => void;
   onRepeatBoth: () => void;
+  onRepeatEnglishToChinese: () => void;
 }) {
   return (
     <TooltipProvider>
-      <div className="absolute bottom-4 left-4 flex gap-2 z-30">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onRepeatChinese();
-              }}
-              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors text-white"
-            >
-              <span className="text-sm font-bold">中</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Repeat Chinese pronunciation</p>
-          </TooltipContent>
-        </Tooltip>
+      <div className="absolute bottom-4 left-4 flex items-center gap-2 z-30">
+        <span className="text-xs text-white/70 font-medium">Repeat:</span>
+        <div className="flex rounded-lg border border-white/30 overflow-hidden bg-white/10">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRepeatChinese();
+                }}
+                className="px-2.5 py-1 text-xs font-bold text-white hover:bg-white/20 transition-colors"
+              >
+                中
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Repeat Chinese only</p>
+            </TooltipContent>
+          </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onRepeatEnglish();
-              }}
-              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors text-white"
-            >
-              <span className="text-sm font-bold">EN</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Repeat English pronunciation</p>
-          </TooltipContent>
-        </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRepeatEnglish();
+                }}
+                className="px-2.5 py-1 text-xs font-bold text-white hover:bg-white/20 transition-colors border-l border-white/30"
+              >
+                EN
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Repeat English only</p>
+            </TooltipContent>
+          </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onRepeatBoth();
-              }}
-              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors text-white"
-            >
-              <Repeat className="w-4 h-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Repeat both Chinese and English</p>
-          </TooltipContent>
-        </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRepeatBoth();
+                }}
+                className="px-2.5 py-1 text-xs font-bold text-white hover:bg-white/20 transition-colors border-l border-white/30"
+              >
+                中→EN
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Repeat Chinese then English</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRepeatEnglishToChinese();
+                }}
+                className="px-2.5 py-1 text-xs font-bold text-white hover:bg-white/20 transition-colors border-l border-white/30"
+              >
+                EN→中
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Repeat English then Chinese</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
     </TooltipProvider>
   );
