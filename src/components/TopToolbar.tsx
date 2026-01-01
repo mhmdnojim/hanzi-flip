@@ -253,46 +253,50 @@ export function TopToolbar(props: TopToolbarProps) {
         </Button>
       </div>
 
-      {/* Row 3: Autoplay Controls */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <Button
-          variant={props.isAutoplayActive ? "default" : "outline"}
-          size="sm"
-          onClick={props.onToggleAutoplay}
-          className={cn(
-            "gap-1",
-            props.isAutoplayActive && "bg-emerald-500 hover:bg-emerald-600"
-          )}
-        >
-          <Play className={cn("w-3.5 h-3.5", props.isAutoplayActive && "animate-pulse")} />
-          Auto-play
-        </Button>
-
-        {/* Autoplay Mode Tabs */}
-        <div className="flex rounded-lg border border-border overflow-hidden">
-          {[
-            { mode: "chinese" as AutoplayMode, label: "中" },
-            { mode: "english" as AutoplayMode, label: "EN" },
-            { mode: "chinese-to-english" as AutoplayMode, label: "中→EN" },
-            { mode: "english-to-chinese" as AutoplayMode, label: "EN→" },
-            { mode: "off" as AutoplayMode, label: "EN→中" },
-          ].map(({ mode, label }) => (
-            <button
-              key={mode}
-              onClick={() => props.onAutoplayModeChange(mode)}
-              className={cn(
-                "px-2.5 py-1 text-xs font-medium transition-colors",
-                props.autoplayMode === mode
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
-              )}
-            >
-              {label}
-            </button>
-          ))}
+      {/* Row 3: Autoplay & Repeat Mode Selectors */}
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+        {/* Autoplay Mode Selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground font-medium">Autoplay:</span>
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            {[
+              { mode: "chinese" as AutoplayMode, label: "中" },
+              { mode: "english" as AutoplayMode, label: "EN" },
+              { mode: "chinese-to-english" as AutoplayMode, label: "中→EN" },
+              { mode: "english-to-chinese" as AutoplayMode, label: "EN→中" },
+            ].map(({ mode, label }) => (
+              <button
+                key={mode}
+                onClick={() => props.onAutoplayModeChange(mode === props.autoplayMode ? "off" : mode)}
+                className={cn(
+                  "px-2.5 py-1 text-xs font-medium transition-colors",
+                  props.autoplayMode === mode
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Timing Controls */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground whitespace-nowrap">Next translation:</span>
+          <div className="w-16">
+            <Slider
+              value={[props.languageGap]}
+              min={0.5}
+              max={5}
+              step={0.5}
+              onValueChange={([v]) => props.onLanguageGapChange(v)}
+              className="accent-blue-500"
+            />
+          </div>
+          <span className="text-xs font-medium text-blue-500">{props.languageGap}s</span>
+        </div>
+
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground whitespace-nowrap">Next word:</span>
           <div className="w-20">
@@ -306,21 +310,6 @@ export function TopToolbar(props: TopToolbarProps) {
             />
           </div>
           <span className="text-xs font-medium text-primary">{props.nextDelay}s</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">Gap:</span>
-          <div className="w-16">
-            <Slider
-              value={[props.languageGap]}
-              min={0.5}
-              max={5}
-              step={0.5}
-              onValueChange={([v]) => props.onLanguageGapChange(v)}
-              className="accent-blue-500"
-            />
-          </div>
-          <span className="text-xs font-medium text-blue-500">{props.languageGap}s</span>
         </div>
 
         <div className="flex items-center gap-2">
