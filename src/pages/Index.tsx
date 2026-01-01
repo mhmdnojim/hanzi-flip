@@ -37,19 +37,16 @@ const Index = () => {
     onFlip: handleFlip,
     speakChinese: audio.speakChinese,
     speakEnglish: audio.speakEnglish,
-    getCurrentWord: useCallback(() => vocabulary.words[0] || null, [vocabulary.words]),
+    getWordAtIndex: useCallback(
+      (index: number) => vocabulary.words[index] || null,
+      [vocabulary.words]
+    ),
     isFlipped,
     languageGap,
     nextDelay,
   });
 
   const activeWord = vocabulary.words[studySession.currentIndex];
-  
-  // Update getCurrentWord to use current index
-  const getCurrentWordForSession = useCallback(
-    () => vocabulary.words[studySession.currentIndex] || null,
-    [vocabulary.words, studySession.currentIndex]
-  );
 
   const handleNext = useCallback(() => {
     studySession.goToNext();
