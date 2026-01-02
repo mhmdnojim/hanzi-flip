@@ -48,23 +48,24 @@ const Index = () => {
 
   const activeWord = vocabulary.words[studySession.currentIndex];
 
-  // Auto-pronounce both languages with gap
-  const pronounceBothLanguages = useCallback(async (word: typeof activeWord) => {
+  // Pronounce the visible language on the card
+  const pronounceVisibleLanguage = useCallback((word: typeof activeWord, flipped: boolean) => {
     if (!word || audio.voiceMuted) return;
     
-    if (showChineseFirst) {
-      await audio.speakChinese(word.chinese);
-      setTimeout(() => audio.speakEnglish(word.english), 500);
+    // Determine which language is currently visible
+    const showingChinese = showChineseFirst ? !flipped : flipped;
+    
+    if (showingChinese) {
+      audio.speakChinese(word.chinese);
     } else {
-      await audio.speakEnglish(word.english);
-      setTimeout(() => audio.speakChinese(word.chinese), 500);
+      audio.speakEnglish(word.english);
     }
   }, [audio, showChineseFirst]);
 
   // Pronounce on initial load or when vocabulary changes
   useEffect(() => {
     if (activeWord && vocabulary.words.length > 0) {
-      pronounceBothLanguages(activeWord);
+      pronounceVisibleLanguage(activeWord, false);
     }
   }, [vocabulary.currentDeckId]); // Only on deck change/initial load
 
@@ -72,24 +73,24 @@ const Index = () => {
     studySession.goToNext();
     setIsFlipped(false);
     audio.playSoundEffect("navigate");
-    // Pronounce after navigation
+    // Pronounce after navigation (card is not flipped)
     setTimeout(() => {
       const nextWord = vocabulary.words[studySession.currentIndex + 1] || vocabulary.words[0];
-      if (nextWord) pronounceBothLanguages(nextWord);
+      if (nextWord) pronounceVisibleLanguage(nextWord, false);
     }, 100);
-  }, [studySession, audio, vocabulary.words, pronounceBothLanguages]);
+  }, [studySession, audio, vocabulary.words, pronounceVisibleLanguage]);
 
   const handlePrevious = useCallback(() => {
     studySession.goToPrevious();
     setIsFlipped(false);
     audio.playSoundEffect("navigate");
-    // Pronounce after navigation
+    // Pronounce after navigation (card is not flipped)
     setTimeout(() => {
       const prevIndex = studySession.currentIndex - 1;
       const prevWord = vocabulary.words[prevIndex >= 0 ? prevIndex : vocabulary.words.length - 1];
-      if (prevWord) pronounceBothLanguages(prevWord);
+      if (prevWord) pronounceVisibleLanguage(prevWord, false);
     }, 100);
-  }, [studySession, audio, vocabulary.words, showChineseFirst]);
+  }, [studySession, audio, vocabulary.words, pronounceVisibleLanguage]);
 
   const handleCorrect = useCallback(() => {
     if (activeWord) {
