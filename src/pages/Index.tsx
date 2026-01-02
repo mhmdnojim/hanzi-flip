@@ -48,21 +48,23 @@ const Index = () => {
 
   const activeWord = vocabulary.words[studySession.currentIndex];
 
-  // Auto-pronounce when word changes (navigation or initial load)
-  const pronounceCurrentWord = useCallback(() => {
-    if (activeWord && !audio.voiceMuted) {
-      if (showChineseFirst) {
-        audio.speakChinese(activeWord.chinese);
-      } else {
-        audio.speakEnglish(activeWord.english);
-      }
+  // Auto-pronounce both languages with gap
+  const pronounceBothLanguages = useCallback(async (word: typeof activeWord) => {
+    if (!word || audio.voiceMuted) return;
+    
+    if (showChineseFirst) {
+      await audio.speakChinese(word.chinese);
+      setTimeout(() => audio.speakEnglish(word.english), 500);
+    } else {
+      await audio.speakEnglish(word.english);
+      setTimeout(() => audio.speakChinese(word.chinese), 500);
     }
-  }, [activeWord, audio, showChineseFirst]);
+  }, [audio, showChineseFirst]);
 
   // Pronounce on initial load or when vocabulary changes
   useEffect(() => {
     if (activeWord && vocabulary.words.length > 0) {
-      pronounceCurrentWord();
+      pronounceBothLanguages(activeWord);
     }
   }, [vocabulary.currentDeckId]); // Only on deck change/initial load
 
@@ -73,15 +75,9 @@ const Index = () => {
     // Pronounce after navigation
     setTimeout(() => {
       const nextWord = vocabulary.words[studySession.currentIndex + 1] || vocabulary.words[0];
-      if (nextWord && !audio.voiceMuted) {
-        if (showChineseFirst) {
-          audio.speakChinese(nextWord.chinese);
-        } else {
-          audio.speakEnglish(nextWord.english);
-        }
-      }
+      if (nextWord) pronounceBothLanguages(nextWord);
     }, 100);
-  }, [studySession, audio, vocabulary.words, showChineseFirst]);
+  }, [studySession, audio, vocabulary.words, pronounceBothLanguages]);
 
   const handlePrevious = useCallback(() => {
     studySession.goToPrevious();
@@ -91,13 +87,7 @@ const Index = () => {
     setTimeout(() => {
       const prevIndex = studySession.currentIndex - 1;
       const prevWord = vocabulary.words[prevIndex >= 0 ? prevIndex : vocabulary.words.length - 1];
-      if (prevWord && !audio.voiceMuted) {
-        if (showChineseFirst) {
-          audio.speakChinese(prevWord.chinese);
-        } else {
-          audio.speakEnglish(prevWord.english);
-        }
-      }
+      if (prevWord) pronounceBothLanguages(prevWord);
     }, 100);
   }, [studySession, audio, vocabulary.words, showChineseFirst]);
 
