@@ -48,17 +48,58 @@ const Index = () => {
 
   const activeWord = vocabulary.words[studySession.currentIndex];
 
+  // Auto-pronounce when word changes (navigation or initial load)
+  const pronounceCurrentWord = useCallback(() => {
+    if (activeWord && !audio.voiceMuted) {
+      if (showChineseFirst) {
+        audio.speakChinese(activeWord.chinese);
+      } else {
+        audio.speakEnglish(activeWord.english);
+      }
+    }
+  }, [activeWord, audio, showChineseFirst]);
+
+  // Pronounce on initial load or when vocabulary changes
+  useEffect(() => {
+    if (activeWord && vocabulary.words.length > 0) {
+      pronounceCurrentWord();
+    }
+  }, [vocabulary.currentDeckId]); // Only on deck change/initial load
+
   const handleNext = useCallback(() => {
     studySession.goToNext();
     setIsFlipped(false);
     audio.playSoundEffect("navigate");
-  }, [studySession, audio]);
+    // Pronounce after navigation
+    setTimeout(() => {
+      const nextWord = vocabulary.words[studySession.currentIndex + 1] || vocabulary.words[0];
+      if (nextWord && !audio.voiceMuted) {
+        if (showChineseFirst) {
+          audio.speakChinese(nextWord.chinese);
+        } else {
+          audio.speakEnglish(nextWord.english);
+        }
+      }
+    }, 100);
+  }, [studySession, audio, vocabulary.words, showChineseFirst]);
 
   const handlePrevious = useCallback(() => {
     studySession.goToPrevious();
     setIsFlipped(false);
     audio.playSoundEffect("navigate");
-  }, [studySession, audio]);
+    // Pronounce after navigation
+    setTimeout(() => {
+      const prevIndex = studySession.currentIndex - 1;
+      const prevWord = vocabulary.words[prevIndex >= 0 ? prevIndex : vocabulary.words.length - 1];
+      if (prevWord && !audio.voiceMuted) {
+        if (showChineseFirst) {
+          audio.speakChinese(prevWord.chinese);
+        } else {
+          audio.speakEnglish(prevWord.english);
+        }
+      }
+    }, 100);
+  }, [studySession, audio, vocabulary.words, showChineseFirst]);
 
   const handleCorrect = useCallback(() => {
     if (activeWord) {
