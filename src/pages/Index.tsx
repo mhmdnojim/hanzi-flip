@@ -86,17 +86,25 @@ const Index = () => {
 
   const handleCorrect = useCallback(() => {
     if (activeWord) {
+      const wasCorrect = (activeWord.correctCount || 0) > 0;
       vocabulary.markCorrect(activeWord.id);
       audio.playSoundEffect("correct");
-      toast({ title: "Correct! 🎉", duration: 1000 });
+      toast({
+        title: wasCorrect ? "Correct removed" : "Correct! 🎉",
+        duration: 1000,
+      });
     }
   }, [activeWord, vocabulary, audio, toast]);
 
   const handleIncorrect = useCallback(() => {
     if (activeWord) {
+      const wasIncorrect = (activeWord.incorrectCount || 0) > 0;
       vocabulary.markIncorrect(activeWord.id);
       audio.playSoundEffect("incorrect");
-      toast({ title: "Keep practicing! 💪", duration: 1000 });
+      toast({
+        title: wasIncorrect ? "Incorrect removed" : "Keep practicing! 💪",
+        duration: 1000,
+      });
     }
   }, [activeWord, vocabulary, audio, toast]);
 

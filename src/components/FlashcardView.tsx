@@ -286,15 +286,21 @@ export function FlashcardView({
                     e.stopPropagation();
                     onIncorrect();
                   }}
-                  className="p-1.5 sm:p-2 rounded-full bg-rose-500/30 hover:bg-rose-500/50 transition-colors"
+                  className={cn(
+                    "p-1.5 sm:p-2 rounded-full transition-colors",
+                    (word.incorrectCount || 0) > 0
+                      ? "bg-rose-500/80 ring-2 ring-white/40"
+                      : "bg-rose-500/30 hover:bg-rose-500/50"
+                  )}
                 >
                   <ThumbsDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Mark as incorrect</p>
+                <p>{(word.incorrectCount || 0) > 0 ? "Remove incorrect" : "Mark as incorrect"}</p>
               </TooltipContent>
             </Tooltip>
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -302,15 +308,21 @@ export function FlashcardView({
                     e.stopPropagation();
                     onCorrect();
                   }}
-                  className="p-1.5 sm:p-2 rounded-full bg-emerald-500/30 hover:bg-emerald-500/50 transition-colors"
+                  className={cn(
+                    "p-1.5 sm:p-2 rounded-full transition-colors",
+                    (word.correctCount || 0) > 0
+                      ? "bg-emerald-500/80 ring-2 ring-white/40"
+                      : "bg-emerald-500/30 hover:bg-emerald-500/50"
+                  )}
                 >
                   <ThumbsUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Mark as correct</p>
+                <p>{(word.correctCount || 0) > 0 ? "Remove correct" : "Mark as correct"}</p>
               </TooltipContent>
             </Tooltip>
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -448,7 +460,7 @@ export function FlashcardView({
           {/* Bottom Section: Autoplay Controls + Progress */}
           <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-30 bg-gradient-to-t from-black/30 to-transparent">
             {/* Controls Row */}
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-2 sm:mb-3">
+            <div className="flex flex-wrap items-start justify-between gap-2 mb-3 sm:mb-4">
               {/* Left: Autoplay Controls */}
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <span className="text-[10px] sm:text-xs text-white/70 font-medium">Autoplay:</span>

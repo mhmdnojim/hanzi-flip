@@ -101,8 +101,13 @@ export function useVocabulary() {
 
   const markCorrect = useCallback(
     (wordId: string) => {
+      const word = currentDeck.words.find((w) => w.id === wordId);
+      const isCorrect = (word?.correctCount || 0) > 0;
+
+      // Toggle correct on/off; correct and incorrect are mutually exclusive
       updateWord(wordId, {
-        correctCount: ((currentDeck.words.find((w) => w.id === wordId)?.correctCount || 0) + 1),
+        correctCount: isCorrect ? 0 : 1,
+        incorrectCount: isCorrect ? (word?.incorrectCount || 0) : 0,
       });
     },
     [currentDeck.words, updateWord]
@@ -110,8 +115,13 @@ export function useVocabulary() {
 
   const markIncorrect = useCallback(
     (wordId: string) => {
+      const word = currentDeck.words.find((w) => w.id === wordId);
+      const isIncorrect = (word?.incorrectCount || 0) > 0;
+
+      // Toggle incorrect on/off; correct and incorrect are mutually exclusive
       updateWord(wordId, {
-        incorrectCount: ((currentDeck.words.find((w) => w.id === wordId)?.incorrectCount || 0) + 1),
+        incorrectCount: isIncorrect ? 0 : 1,
+        correctCount: isIncorrect ? (word?.correctCount || 0) : 0,
       });
     },
     [currentDeck.words, updateWord]
