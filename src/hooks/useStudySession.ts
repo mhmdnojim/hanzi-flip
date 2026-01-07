@@ -270,7 +270,7 @@ export function useStudySession({
     setPlaybackRestartKey((k) => k + 1);
   }, [isAutoplayActive, cancelPlayback]);
 
-  // Autoplay logic - plays through words one by one without repeating
+  // Autoplay logic
   useEffect(() => {
     if (!isAutoplayActive || autoplayMode === "off" || totalWords <= 0) return;
 
@@ -278,7 +278,7 @@ export function useStudySession({
     const runId = playbackRunIdRef.current + 1;
     playbackRunIdRef.current = runId;
 
-    // Capture current index at start - don't re-run effect when it changes
+    // Capture current index once at start; we advance via local `index`
     let index = Math.max(0, Math.min(currentIndex, totalWords - 1));
 
     const runAutoplay = async () => {
@@ -286,9 +286,27 @@ export function useStudySession({
         const word = getWordAtIndex(index);
         if (!word) break;
 
-        // Play the word once according to the mode
-        const success = await playOneCycle(autoplayMode, word, runId);
-        if (!success) break;
+        // How many times to repeat this word (0 = infinite)
+        const repeatTimes = isAutoplayRepeatingRef.current
+          ? autoplayRepeatCountRef.current === 0
+            ? Infinity
+            : autoplayRepeatCountRef.current
+          : 1;
+
+        let cycles = 0;
+        while (cycles < repeatTimes && playbackRunIdRef.current === runId) {
+          const success = await playOneCycle(autoplayMode, word, runId);
+          if (!success) break;
+
+          cycles++;
+
+          if (playbackRunIdRef.current !== runId) break;
+
+          // Gap between repeat cycles (only if more cycles to go)
+          if (cycles < repeatTimes) {
+            await wait(languageGapRef.current * 1000);
+          }
+        }
 
         if (playbackRunIdRef.current !== runId) break;
 
@@ -296,9 +314,11 @@ export function useStudySession({
         await wait(nextDelayRef.current * 1000);
         if (playbackRunIdRef.current !== runId) break;
 
-        // Move to next word
-        index = (index + 1) % totalWords;
-        setCurrentIndex(index);
+        // Move to next word (unless we're in infinite repeat mode)
+        if (!isAutoplayRepeatingRef.current || autoplayRepeatCountRef.current !== 0) {
+          index = (index + 1) % totalWords;
+          setCurrentIndex(index);
+        }
 
         // Reset display for next word based on mode
         if (autoplayMode === "chinese" || autoplayMode === "chinese-to-english") {
@@ -318,7 +338,8 @@ export function useStudySession({
       clearPendingWait();
       setCurrentlySpoken(null);
     };
-    // Note: currentIndex is intentionally NOT in deps - we only read it once at start
+
+    // Note: currentIndex intentionally NOT in deps; we read it once at start.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isAutoplayActive,
