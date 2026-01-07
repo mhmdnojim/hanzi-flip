@@ -168,6 +168,7 @@ const Index = () => {
           showPinyin={showPinyin}
           onTogglePinyin={() => setShowPinyin(!showPinyin)}
           showChineseFirst={showChineseFirst}
+          onResetFlip={() => setIsFlipped(false)}
           onToggleChineseFirst={() => setShowChineseFirst(!showChineseFirst)}
           voiceType={audio.voiceType}
           onVoiceTypeChange={audio.setVoiceType}
@@ -233,12 +234,6 @@ const Index = () => {
           />
         </div>
 
-        {/* Footer */}
-        <footer className="text-center py-2 sm:py-4">
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Designed by <span className="font-medium text-foreground">Mido Habibi</span>
-          </p>
-        </footer>
       </div>
     </div>
   );
