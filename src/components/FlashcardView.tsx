@@ -457,138 +457,10 @@ export function FlashcardView({
             </motion.div>
           </div>
 
-          {/* Bottom Section: Autoplay Controls + Progress */}
+          {/* Bottom Section: Controls + Progress */}
           <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-30 bg-gradient-to-t from-black/30 to-transparent">
-            {/* Controls Row */}
-            <div className="flex flex-wrap items-start justify-between gap-2 mb-3 sm:mb-4">
-              {/* Left: Autoplay Controls */}
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <span className="text-[10px] sm:text-xs text-white/70 font-medium">Autoplay:</span>
-                <div className="flex rounded-lg border border-white/30 bg-white/10 overflow-hidden">
-                  {autoplayOptions.map(({ mode, label, tooltip }) => (
-                    <Tooltip key={mode}>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-
-                            // Toggle off if pressing the same active mode
-                            if (autoplayMode === mode && isAutoplayActive) {
-                              onAutoplayModeChange("off");
-                              return;
-                            }
-
-                            // If user presses Chinese then English -> Chinese→English
-                            if (autoplayMode === "chinese" && mode === "english") {
-                              onAutoplayModeChange("chinese-to-english");
-                              return;
-                            }
-
-                            // If user presses English then Chinese -> English→Chinese
-                            if (autoplayMode === "english" && mode === "chinese") {
-                              onAutoplayModeChange("english-to-chinese");
-                              return;
-                            }
-
-                            // Otherwise: set requested mode
-                            onAutoplayModeChange(mode);
-                          }}
-                          className={cn(
-                            "px-1.5 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-colors border-l border-white/30 first:border-l-0",
-                            autoplayMode === mode && isAutoplayActive
-                              ? "bg-emerald-500 text-white"
-                              : "text-white hover:bg-white/20"
-                          )}
-                        >
-                          {label}
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{tooltip}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
-                </div>
-
-                {/* Repeat (only works when autoplay is active) */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (isAutoplayActive) onToggleAutoplayRepeat();
-                      }}
-                      disabled={!isAutoplayActive}
-                      className={cn(
-                        "p-1 sm:p-1.5 rounded-full transition-colors",
-                        !isAutoplayActive
-                          ? "bg-white/10 text-white/40 cursor-not-allowed"
-                          : isAutoplayRepeating
-                            ? "bg-amber-500 text-white"
-                            : "bg-white/20 text-white hover:bg-white/30"
-                      )}
-                    >
-                      <Repeat className="w-3 h-3" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>
-                      {!isAutoplayActive
-                        ? "Select autoplay mode first"
-                        : isAutoplayRepeating
-                          ? "Stop repeating"
-                          : "Repeat current word"}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Repeat count */}
-                <div
-                  className={cn(
-                    "flex items-center rounded-lg border overflow-hidden",
-                    !isAutoplayActive ? "border-white/20 bg-white/5" : "border-white/30 bg-white/10"
-                  )}
-                >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isAutoplayActive) return;
-                      if (autoplayRepeatCount > 0) onAutoplayRepeatCountChange(autoplayRepeatCount - 1);
-                    }}
-                    disabled={!isAutoplayActive}
-                    className={cn(
-                      "px-1 sm:px-1.5 py-0.5 sm:py-1 transition-colors",
-                      !isAutoplayActive ? "text-white/40 cursor-not-allowed" : "text-white hover:bg-white/20"
-                    )}
-                  >
-                    <Minus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                  </button>
-                  <span
-                    className={cn(
-                      "px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-bold min-w-[20px] sm:min-w-[28px] text-center border-x",
-                      !isAutoplayActive ? "text-white/40 border-white/20" : "text-white border-white/30"
-                    )}
-                  >
-                    {autoplayRepeatCount === 0 ? "∞" : autoplayRepeatCount}
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isAutoplayActive) return;
-                      onAutoplayRepeatCountChange(autoplayRepeatCount + 1);
-                    }}
-                    disabled={!isAutoplayActive}
-                    className={cn(
-                      "px-1 sm:px-1.5 py-0.5 sm:py-1 transition-colors",
-                      !isAutoplayActive ? "text-white/40 cursor-not-allowed" : "text-white hover:bg-white/20"
-                    )}
-                  >
-                    <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Right: Timing + Font Controls - Stacked Vertically */}
+            {/* Right: Timing + Font Controls - Above autoplay row */}
+            <div className="flex justify-end mb-2">
               <div className="flex flex-col gap-1.5 sm:gap-2 items-end">
                 {/* Font size */}
                 <div className="flex items-center gap-1 sm:gap-1.5">
@@ -654,6 +526,133 @@ export function FlashcardView({
                     <p>Delay before moving to next word</p>
                   </TooltipContent>
                 </Tooltip>
+              </div>
+            </div>
+
+            {/* Autoplay Controls Row - Aligned with progress bar start */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-[10px]" style={{ marginLeft: '52px' }}>
+              <span className="text-[10px] sm:text-xs text-white/70 font-medium">Autoplay:</span>
+              <div className="flex rounded-lg border border-white/30 bg-white/10 overflow-hidden">
+                {autoplayOptions.map(({ mode, label, tooltip }) => (
+                  <Tooltip key={mode}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+
+                          // Toggle off if pressing the same active mode
+                          if (autoplayMode === mode && isAutoplayActive) {
+                            onAutoplayModeChange("off");
+                            return;
+                          }
+
+                          // If user presses Chinese then English -> Chinese→English
+                          if (autoplayMode === "chinese" && mode === "english") {
+                            onAutoplayModeChange("chinese-to-english");
+                            return;
+                          }
+
+                          // If user presses English then Chinese -> English→Chinese
+                          if (autoplayMode === "english" && mode === "chinese") {
+                            onAutoplayModeChange("english-to-chinese");
+                            return;
+                          }
+
+                          // Otherwise: set requested mode
+                          onAutoplayModeChange(mode);
+                        }}
+                        className={cn(
+                          "px-1.5 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-colors border-l border-white/30 first:border-l-0",
+                          autoplayMode === mode && isAutoplayActive
+                            ? "bg-emerald-500 text-white"
+                            : "text-white hover:bg-white/20"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{tooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+
+              {/* Repeat (only works when autoplay is active) */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isAutoplayActive) onToggleAutoplayRepeat();
+                    }}
+                    disabled={!isAutoplayActive}
+                    className={cn(
+                      "p-1 sm:p-1.5 rounded-full transition-colors",
+                      !isAutoplayActive
+                        ? "bg-white/10 text-white/40 cursor-not-allowed"
+                        : isAutoplayRepeating
+                          ? "bg-amber-500 text-white"
+                          : "bg-white/20 text-white hover:bg-white/30"
+                    )}
+                  >
+                    <Repeat className="w-3 h-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {!isAutoplayActive
+                      ? "Select autoplay mode first"
+                      : isAutoplayRepeating
+                        ? "Stop repeating"
+                        : "Repeat current word"}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Repeat count */}
+              <div
+                className={cn(
+                  "flex items-center rounded-lg border overflow-hidden",
+                  !isAutoplayActive ? "border-white/20 bg-white/5" : "border-white/30 bg-white/10"
+                )}
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isAutoplayActive) return;
+                    if (autoplayRepeatCount > 0) onAutoplayRepeatCountChange(autoplayRepeatCount - 1);
+                  }}
+                  disabled={!isAutoplayActive}
+                  className={cn(
+                    "px-1 sm:px-1.5 py-0.5 sm:py-1 transition-colors",
+                    !isAutoplayActive ? "text-white/40 cursor-not-allowed" : "text-white hover:bg-white/20"
+                  )}
+                >
+                  <Minus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                </button>
+                <span
+                  className={cn(
+                    "px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-bold min-w-[20px] sm:min-w-[28px] text-center border-x",
+                    !isAutoplayActive ? "text-white/40 border-white/20" : "text-white border-white/30"
+                  )}
+                >
+                  {autoplayRepeatCount === 0 ? "∞" : autoplayRepeatCount}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isAutoplayActive) return;
+                    onAutoplayRepeatCountChange(autoplayRepeatCount + 1);
+                  }}
+                  disabled={!isAutoplayActive}
+                  className={cn(
+                    "px-1 sm:px-1.5 py-0.5 sm:py-1 transition-colors",
+                    !isAutoplayActive ? "text-white/40 cursor-not-allowed" : "text-white hover:bg-white/20"
+                  )}
+                >
+                  <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                </button>
               </div>
             </div>
 
