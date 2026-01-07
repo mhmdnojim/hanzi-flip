@@ -1,10 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Flashcard } from "@/components/Flashcard";
-import { ProgressBar } from "@/components/ProgressBar";
-import { TopToolbar } from "@/components/TopToolbar";
-import { StudyStats } from "@/components/StudyStats";
-import { NavigationControls } from "@/components/NavigationControls";
+import { FlashcardView } from "@/components/FlashcardView";
+import { CompactToolbar } from "@/components/CompactToolbar";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useAudio } from "@/hooks/useAudio";
 import { useStudySession } from "@/hooks/useStudySession";
@@ -28,7 +25,7 @@ const Index = () => {
     audio.playSoundEffect("flip");
   }, [audio]);
 
-  // State for timing controls (lifted here to avoid circular dependency)
+  // State for timing controls
   const [nextDelay, setNextDelay] = useState(3);
   const [languageGap, setLanguageGap] = useState(1.5);
 
@@ -51,10 +48,7 @@ const Index = () => {
   // Pronounce the visible language on the card
   const pronounceVisibleLanguage = useCallback((word: typeof activeWord, flipped: boolean) => {
     if (!word || audio.voiceMuted) return;
-    
-    // Determine which language is currently visible
     const showingChinese = showChineseFirst ? !flipped : flipped;
-    
     if (showingChinese) {
       audio.speakChinese(word.chinese);
     } else {
@@ -67,13 +61,12 @@ const Index = () => {
     if (activeWord && vocabulary.words.length > 0) {
       pronounceVisibleLanguage(activeWord, false);
     }
-  }, [vocabulary.currentDeckId]); // Only on deck change/initial load
+  }, [vocabulary.currentDeckId]);
 
   const handleNext = useCallback(() => {
     studySession.goToNext();
     setIsFlipped(false);
     audio.playSoundEffect("navigate");
-    // Pronounce after navigation (card is not flipped)
     setTimeout(() => {
       const nextWord = vocabulary.words[studySession.currentIndex + 1] || vocabulary.words[0];
       if (nextWord) pronounceVisibleLanguage(nextWord, false);
@@ -84,7 +77,6 @@ const Index = () => {
     studySession.goToPrevious();
     setIsFlipped(false);
     audio.playSoundEffect("navigate");
-    // Pronounce after navigation (card is not flipped)
     setTimeout(() => {
       const prevIndex = studySession.currentIndex - 1;
       const prevWord = vocabulary.words[prevIndex >= 0 ? prevIndex : vocabulary.words.length - 1];
@@ -150,8 +142,10 @@ const Index = () => {
     onShuffle: handleShuffle,
   });
 
-  // Calculate favorites count
+  // Calculate counts
   const favoritesCount = vocabulary.words.filter((w) => w.favorite).length;
+  const correctCount = vocabulary.words.filter((w) => w.correctCount > 0).length;
+  const incorrectCount = vocabulary.words.filter((w) => w.incorrectCount > 0).length;
 
   if (!activeWord) {
     return (
@@ -162,26 +156,19 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container max-w-5xl mx-auto px-4 py-4">
-        {/* Top Toolbar */}
-        <TopToolbar
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex flex-col">
+      <div className="w-full max-w-[95vw] xl:max-w-[90vw] mx-auto px-2 sm:px-4 py-2 sm:py-4 flex flex-col flex-1">
+        {/* Compact Toolbar - One line of small round buttons */}
+        <CompactToolbar
           deckName={vocabulary.currentDeck.name}
           decks={vocabulary.decks}
           currentDeckId={vocabulary.currentDeckId}
           onDeckChange={vocabulary.setCurrentDeckId}
           onImport={handleImport}
-          favoritesCount={favoritesCount}
-          elapsedTime={studySession.formattedTime}
-          completionPercentage={studySession.completionPercentage}
           showPinyin={showPinyin}
           onTogglePinyin={() => setShowPinyin(!showPinyin)}
           showChineseFirst={showChineseFirst}
           onToggleChineseFirst={() => setShowChineseFirst(!showChineseFirst)}
-          fontSize={fontSize}
-          onFontSizeChange={setFontSize}
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
           voiceType={audio.voiceType}
           onVoiceTypeChange={audio.setVoiceType}
           voiceMuted={audio.voiceMuted}
@@ -192,35 +179,11 @@ const Index = () => {
           onShuffle={handleShuffle}
           onResetOrder={vocabulary.resetOrder}
           onResetProgress={vocabulary.resetProgress}
-          autoplayMode={studySession.autoplayMode}
-          onAutoplayModeChange={studySession.setAutoplayMode}
-          isAutoplayActive={studySession.isAutoplayActive}
-          onToggleAutoplay={() =>
-            studySession.setAutoplayMode(
-              studySession.autoplayMode === "off" ? "chinese" : "off"
-            )
-          }
-          nextDelay={nextDelay}
-          onNextDelayChange={setNextDelay}
-          languageGap={languageGap}
-          onLanguageGapChange={setLanguageGap}
         />
 
-        {/* Progress Bar */}
-        <div className="mt-4">
-          <ProgressBar
-            current={studySession.currentIndex}
-            total={vocabulary.words.length}
-            percentage={studySession.completionPercentage}
-            onSeek={studySession.goToIndex}
-            correctCount={vocabulary.words.filter((w) => w.correctCount > 0).length}
-            incorrectCount={vocabulary.words.filter((w) => w.incorrectCount > 0).length}
-          />
-        </div>
-
-        {/* Flashcard */}
-        <div className="mt-6">
-          <Flashcard
+        {/* Flashcard View - Full width, contains everything */}
+        <div className="flex-1 mt-2 sm:mt-4">
+          <FlashcardView
             word={activeWord}
             isFlipped={isFlipped}
             onFlip={handleFlip}
@@ -230,6 +193,7 @@ const Index = () => {
             showPinyin={showPinyin}
             showChineseFirst={showChineseFirst}
             fontSize={fontSize}
+            onFontSizeChange={setFontSize}
             onSpeakChinese={() => audio.speakChinese(activeWord.chinese)}
             onSpeakEnglish={() => audio.speakEnglish(activeWord.english)}
             autoplayMode={studySession.autoplayMode}
@@ -244,24 +208,34 @@ const Index = () => {
             isRepeatActive={studySession.isRepeatActive}
             displayMode={studySession.displayMode}
             currentlySpoken={studySession.currentlySpoken}
-          />
-        </div>
-
-        {/* Navigation */}
-        <div className="mt-6">
-          <NavigationControls
-            onPrevious={handlePrevious}
-            onNext={handleNext}
-            onFlip={handleFlip}
+            // Progress & Stats
+            currentIndex={studySession.currentIndex}
+            totalWords={vocabulary.words.length}
+            percentage={studySession.completionPercentage}
+            onSeek={studySession.goToIndex}
+            correctCount={correctCount}
+            incorrectCount={incorrectCount}
+            // Stats inside card
+            favoritesCount={favoritesCount}
+            elapsedTime={studySession.formattedTime}
+            completionPercentage={studySession.completionPercentage}
+            // Timing controls
+            nextDelay={nextDelay}
+            onNextDelayChange={setNextDelay}
+            languageGap={languageGap}
+            onLanguageGapChange={setLanguageGap}
+            // Dark mode
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+            // Scoring
             onCorrect={handleCorrect}
             onIncorrect={handleIncorrect}
-            isFlipped={isFlipped}
           />
         </div>
 
         {/* Footer */}
-        <footer className="text-center mt-8 pb-4">
-          <p className="text-sm text-muted-foreground">
+        <footer className="text-center py-2 sm:py-4">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Designed by <span className="font-medium text-foreground">Mido Habibi</span>
           </p>
         </footer>
