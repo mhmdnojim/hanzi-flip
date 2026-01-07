@@ -457,7 +457,7 @@ export function FlashcardView({
             </motion.div>
           </div>
 
-          {/* Bottom Section: Controls + Progress */}
+          {/* Bottom Section: Controls inside card */}
           <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-30 bg-gradient-to-t from-black/30 to-transparent">
             {/* Right: Timing + Font Controls - Above autoplay row */}
             <div className="flex justify-end mb-2">
@@ -529,8 +529,8 @@ export function FlashcardView({
               </div>
             </div>
 
-            {/* Autoplay Controls Row - Aligned with progress bar start */}
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-[10px]" style={{ marginLeft: '52px' }}>
+            {/* Autoplay Controls Row */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span className="text-[10px] sm:text-xs text-white/70 font-medium">Autoplay:</span>
               <div className="flex rounded-lg border border-white/30 bg-white/10 overflow-hidden">
                 {autoplayOptions.map(({ mode, label, tooltip }) => (
@@ -655,49 +655,49 @@ export function FlashcardView({
                 </button>
               </div>
             </div>
-
-            {/* Progress Bar */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[10px] sm:text-xs text-white/80">
-                <span>{currentIndex + 1} / {totalWords}</span>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <span className="flex items-center gap-1 text-emerald-300 font-medium">
-                    <Check className="w-3 h-3 sm:w-4 sm:h-4" />
-                    {correctCount}
-                  </span>
-                  <span className="flex items-center gap-1 text-rose-300 font-medium">
-                    <X className="w-3 h-3 sm:w-4 sm:h-4" />
-                    {incorrectCount}
-                  </span>
-                </div>
-              </div>
-              <div
-                className="relative h-2 sm:h-3 bg-white/20 rounded-full cursor-pointer overflow-hidden"
-                onClick={handleProgressClick}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  setIsDragging(true);
-                }}
-                onMouseUp={() => setIsDragging(false)}
-                onMouseLeave={() => setIsDragging(false)}
-                onMouseMove={handleProgressDrag}
-              >
-                <motion.div
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-white/80 via-white/60 to-white/40 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${percentage}%` }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                />
-                <motion.div
-                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing"
-                  style={{ left: `calc(${percentage}% - 8px)` }}
-                  whileHover={{ scale: 1.2 }}
-                  whileTap={{ scale: 0.9 }}
-                />
-              </div>
-            </div>
           </div>
         </motion.div>
+
+        {/* Progress Bar - Outside card, 2px below */}
+        <div className="mt-[2px] px-3 sm:px-4 space-y-1">
+          <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground">
+            <span>{currentIndex + 1} / {totalWords}</span>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="flex items-center gap-1 text-emerald-500 font-medium">
+                <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                {correctCount}
+              </span>
+              <span className="flex items-center gap-1 text-rose-500 font-medium">
+                <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                {incorrectCount}
+              </span>
+            </div>
+          </div>
+          <div
+            className="relative h-2 sm:h-3 bg-muted rounded-full cursor-pointer overflow-hidden"
+            onClick={handleProgressClick}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              setIsDragging(true);
+            }}
+            onMouseUp={() => setIsDragging(false)}
+            onMouseLeave={() => setIsDragging(false)}
+            onMouseMove={handleProgressDrag}
+          >
+            <motion.div
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary via-primary/80 to-primary/60 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${percentage}%` }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            />
+            <motion.div
+              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 bg-primary rounded-full shadow-lg cursor-grab active:cursor-grabbing"
+              style={{ left: `calc(${percentage}% - 8px)` }}
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.9 }}
+            />
+          </div>
+        </div>
       </div>
     </TooltipProvider>
   );
