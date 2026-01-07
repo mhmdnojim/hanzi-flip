@@ -278,6 +278,7 @@ export function useStudySession({
     const runId = playbackRunIdRef.current + 1;
     playbackRunIdRef.current = runId;
 
+    // Capture current index at start - don't re-run effect when it changes
     let index = Math.max(0, Math.min(currentIndex, totalWords - 1));
 
     const runAutoplay = async () => {
@@ -317,11 +318,12 @@ export function useStudySession({
       clearPendingWait();
       setCurrentlySpoken(null);
     };
+    // Note: currentIndex is intentionally NOT in deps - we only read it once at start
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isAutoplayActive,
     autoplayMode,
     totalWords,
-    currentIndex,
     getWordAtIndex,
     playOneCycle,
     wait,
