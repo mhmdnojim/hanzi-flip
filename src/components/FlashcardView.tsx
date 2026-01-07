@@ -146,13 +146,7 @@ export function FlashcardView({
     } else if (pct > 0.9) {
       onNext();
     } else if (!isAutoplayActive && !isRepeatActive) {
-      // Play sound based on what's currently showing, then flip
-      const { showChinese } = getContentToShow();
-      if (showChinese) {
-        onSpeakChinese();
-      } else {
-        onSpeakEnglish();
-      }
+      // Just flip the card, no sound
       onFlip();
     }
   };
@@ -180,11 +174,19 @@ export function FlashcardView({
         return { showChinese: false, showEnglish: true };
       }
     }
-    const showFront = showChineseFirst ? !isFlipped : isFlipped;
-    return {
-      showChinese: showChineseFirst ? showFront : !showFront,
-      showEnglish: showChineseFirst ? !showFront : showFront,
-    };
+    // When showChineseFirst is true: front=Chinese, back=English
+    // When showChineseFirst is false: front=English, back=Chinese
+    if (showChineseFirst) {
+      return {
+        showChinese: !isFlipped,
+        showEnglish: isFlipped,
+      };
+    } else {
+      return {
+        showChinese: isFlipped,
+        showEnglish: !isFlipped,
+      };
+    }
   };
 
   const { showChinese, showEnglish } = getContentToShow();
@@ -398,14 +400,48 @@ export function FlashcardView({
                   >
                     {word.chinese}
                   </p>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSpeakChinese();
+                        }}
+                        className="mt-3 p-2 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                      >
+                        <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Speak Chinese</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </>
               ) : (
-                <p
-                  className="font-body text-white font-bold leading-tight px-4"
-                  style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
-                >
-                  {word.english}
-                </p>
+                <>
+                  <p
+                    className="font-body text-white font-bold leading-tight px-4"
+                    style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
+                  >
+                    {word.english}
+                  </p>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSpeakEnglish();
+                        }}
+                        className="mt-3 p-2 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                      >
+                        <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Speak English</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </>
               )}
             </motion.div>
           </div>
@@ -530,25 +566,8 @@ export function FlashcardView({
                 )}
               </div>
 
-              {/* Right: Timing + Font Controls */}
-              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                {/* Next word delay */}
-                <div className="flex items-center gap-1 sm:gap-1.5">
-                  <span className="text-[10px] sm:text-xs text-white/70 whitespace-nowrap">Next:</span>
-                  <div className="w-12 sm:w-16">
-                    <Slider
-                      value={[nextDelay]}
-                      min={1}
-                      max={10}
-                      step={0.5}
-                      onValueChange={([v]) => onNextDelayChange(v)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="accent-primary"
-                    />
-                  </div>
-                  <span className="text-[10px] sm:text-xs font-medium text-white">{nextDelay}s</span>
-                </div>
-
+              {/* Right: Timing + Font Controls - Stacked Vertically */}
+              <div className="flex flex-col gap-1.5 sm:gap-2 items-end">
                 {/* Font size */}
                 <div className="flex items-center gap-1 sm:gap-1.5">
                   <span className="text-[10px] sm:text-xs text-white/70">Font:</span>
@@ -563,7 +582,24 @@ export function FlashcardView({
                       className="accent-violet-500"
                     />
                   </div>
-                  <span className="text-[10px] sm:text-xs font-medium text-white">{fontSize}px</span>
+                  <span className="text-[10px] sm:text-xs font-medium text-white w-8 text-right">{fontSize}px</span>
+                </div>
+
+                {/* Next word delay */}
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  <span className="text-[10px] sm:text-xs text-white/70 whitespace-nowrap">Next:</span>
+                  <div className="w-12 sm:w-16">
+                    <Slider
+                      value={[nextDelay]}
+                      min={1}
+                      max={10}
+                      step={0.5}
+                      onValueChange={([v]) => onNextDelayChange(v)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="accent-primary"
+                    />
+                  </div>
+                  <span className="text-[10px] sm:text-xs font-medium text-white w-8 text-right">{nextDelay}s</span>
                 </div>
               </div>
             </div>
