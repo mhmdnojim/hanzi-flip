@@ -47,7 +47,7 @@ export function useStudySession({
   const [isRepeatActive, setIsRepeatActive] = useState(false);
 
   // Autoplay repeat: repeat current word N times before moving on (0 = infinite)
-  const [autoplayRepeatCount, setAutoplayRepeatCount] = useState<RepeatCount>(0);
+  const [autoplayRepeatCount, setAutoplayRepeatCount] = useState<RepeatCount>(1);
   const [isAutoplayRepeating, setIsAutoplayRepeating] = useState(false);
 
   // Display state - what should be shown on the card
@@ -106,6 +106,10 @@ export function useStudySession({
   const cancelPlayback = useCallback(() => {
     bumpPlaybackRunId();
     clearPendingWait();
+
+    // Stop browser TTS immediately (free voice)
+    window.speechSynthesis?.cancel();
+
     setCurrentlySpoken(null);
   }, [bumpPlaybackRunId, clearPendingWait]);
 
@@ -232,7 +236,12 @@ export function useStudySession({
         // Deactivate repeat
         setRepeatModeState("off");
         setIsRepeatActive(false);
+      }
+
+      // When autoplay is turned OFF, also turn OFF autoplay-repeat so it can't get stuck repeating.
+      if (mode === "off") {
         setIsAutoplayRepeating(false);
+        isAutoplayRepeatingRef.current = false;
       }
 
       setAutoplayModeState(mode);
@@ -264,9 +273,13 @@ export function useStudySession({
   // Toggle autoplay repeat during autoplay
   const toggleAutoplayRepeat = useCallback(() => {
     if (!isAutoplayActive) return;
-    
+
     cancelPlayback();
-    setIsAutoplayRepeating((prev) => !prev);
+    setIsAutoplayRepeating((prev) => {
+      const next = !prev;
+      isAutoplayRepeatingRef.current = next;
+      return next;
+    });
     setPlaybackRestartKey((k) => k + 1);
   }, [isAutoplayActive, cancelPlayback]);
 
