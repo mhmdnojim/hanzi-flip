@@ -270,7 +270,7 @@ export function useStudySession({
     setPlaybackRestartKey((k) => k + 1);
   }, [isAutoplayActive, cancelPlayback]);
 
-  // Autoplay logic
+  // Autoplay logic - plays through words one by one without repeating
   useEffect(() => {
     if (!isAutoplayActive || autoplayMode === "off" || totalWords <= 0) return;
 
@@ -285,28 +285,9 @@ export function useStudySession({
         const word = getWordAtIndex(index);
         if (!word) break;
 
-        // How many times to repeat this word (0 = infinite) - use refs to get latest values
-        const repeatTimes = isAutoplayRepeatingRef.current
-          ? autoplayRepeatCountRef.current === 0
-            ? Infinity
-            : autoplayRepeatCountRef.current
-          : 1;
-
-        let cycles = 0;
-        while (cycles < repeatTimes && playbackRunIdRef.current === runId) {
-          const success = await playOneCycle(autoplayMode, word, runId);
-          if (!success) break;
-
-          cycles++;
-
-          // Wait between cycles (if more cycles to go or moving to next word)
-          if (playbackRunIdRef.current !== runId) break;
-          
-          if (cycles < repeatTimes) {
-            // Gap between repeat cycles
-            await wait(languageGapRef.current * 1000);
-          }
-        }
+        // Play the word once according to the mode
+        const success = await playOneCycle(autoplayMode, word, runId);
+        if (!success) break;
 
         if (playbackRunIdRef.current !== runId) break;
 
@@ -314,11 +295,9 @@ export function useStudySession({
         await wait(nextDelayRef.current * 1000);
         if (playbackRunIdRef.current !== runId) break;
 
-        // Move to next word (only if not in infinite repeat mode) - use refs
-        if (!isAutoplayRepeatingRef.current || autoplayRepeatCountRef.current !== 0) {
-          index = (index + 1) % totalWords;
-          setCurrentIndex(index);
-        }
+        // Move to next word
+        index = (index + 1) % totalWords;
+        setCurrentIndex(index);
 
         // Reset display for next word based on mode
         if (autoplayMode === "chinese" || autoplayMode === "chinese-to-english") {
@@ -349,11 +328,9 @@ export function useStudySession({
     bumpPlaybackRunId,
     clearPendingWait,
     playbackRestartKey,
-    isAutoplayRepeating,
-    autoplayRepeatCount,
   ]);
 
-  // Repeat logic - loops on current word (standalone repeat mode)
+  // Repeat logic - loops on current word N times (standalone repeat mode)
   useEffect(() => {
     if (!isRepeatActive || repeatMode === "off" || totalWords <= 0) return;
 
@@ -363,23 +340,42 @@ export function useStudySession({
     const index = Math.max(0, Math.min(currentIndex, totalWords - 1));
 
     const runRepeat = async () => {
-      while (playbackRunIdRef.current === runId) {
+      // How many times to repeat (0 = infinite)
+      const repeatTimes = autoplayRepeatCountRef.current === 0
+        ? Infinity
+        : autoplayRepeatCountRef.current;
+
+      let cycles = 0;
+      while (cycles < repeatTimes && playbackRunIdRef.current === runId) {
         const word = getWordAtIndex(index);
         if (!word) break;
 
         const success = await playOneCycle(repeatMode, word, runId);
         if (!success) break;
 
-        // Wait before next repeat cycle
-        await wait(languageGapRef.current * 1000);
+        cycles++;
+
         if (playbackRunIdRef.current !== runId) break;
 
-        // Reset display for next loop based on mode
-        if (repeatMode === "chinese" || repeatMode === "chinese-to-english") {
-          setDisplayMode("chinese");
-        } else {
-          setDisplayMode("english");
+        // Wait before next repeat cycle (if more cycles to go)
+        if (cycles < repeatTimes) {
+          await wait(nextDelayRef.current * 1000);
+          if (playbackRunIdRef.current !== runId) break;
+
+          // Reset display for next loop based on mode
+          if (repeatMode === "chinese" || repeatMode === "chinese-to-english") {
+            setDisplayMode("chinese");
+          } else {
+            setDisplayMode("english");
+          }
         }
+      }
+
+      // Stop repeat mode when done (unless infinite)
+      if (autoplayRepeatCountRef.current !== 0 && cycles >= repeatTimes) {
+        setRepeatModeState("off");
+        setIsRepeatActive(false);
+        setDisplayMode("both");
       }
 
       setCurrentlySpoken(null);
