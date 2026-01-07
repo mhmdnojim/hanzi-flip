@@ -38,6 +38,7 @@ interface CompactToolbarProps {
   onTogglePinyin: () => void;
   showChineseFirst: boolean;
   onToggleChineseFirst: () => void;
+  onResetFlip: () => void;
   voiceType: VoiceType;
   onVoiceTypeChange: (type: VoiceType) => void;
   voiceMuted: boolean;
@@ -141,21 +142,24 @@ export function CompactToolbar(props: CompactToolbarProps) {
           </TooltipContent>
         </Tooltip>
 
-        {/* Language First */}
+        {/* Language First - Fixed width to prevent layout shift */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="default"
               size="sm"
-              onClick={props.onToggleChineseFirst}
-              className="h-8 sm:h-9 px-2 sm:px-3 rounded-full bg-primary hover:bg-primary/90 text-xs sm:text-sm"
+              onClick={() => {
+                props.onToggleChineseFirst();
+                props.onResetFlip();
+              }}
+              className="h-8 sm:h-9 w-16 sm:w-20 rounded-full bg-primary hover:bg-primary/90 text-xs sm:text-sm"
             >
               <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
               {props.showChineseFirst ? "中" : "EN"}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{props.showChineseFirst ? "Chinese shown first" : "English shown first"} - Click to toggle</p>
+            <p>{props.showChineseFirst ? "Show English on front" : "Show Chinese on front"}</p>
           </TooltipContent>
         </Tooltip>
 

@@ -4,8 +4,7 @@ import {
   Heart, 
   ChevronLeft, 
   ChevronRight, 
-  Volume2, 
-  Play, 
+  Volume2,
   Pause, 
   Repeat, 
   Plus, 
@@ -147,6 +146,13 @@ export function FlashcardView({
     } else if (pct > 0.9) {
       onNext();
     } else if (!isAutoplayActive && !isRepeatActive) {
+      // Play sound based on what's currently showing, then flip
+      const { showChinese } = getContentToShow();
+      if (showChinese) {
+        onSpeakChinese();
+      } else {
+        onSpeakEnglish();
+      }
       onFlip();
     }
   };
@@ -213,9 +219,9 @@ export function FlashcardView({
   return (
     <TooltipProvider delayDuration={200}>
       <div className="w-full h-full flex flex-col">
-        {/* Main Card Container */}
+        {/* Main Card Container - Taller min-height */}
         <motion.div
-          className="relative w-full flex-1 min-h-[50vh] sm:min-h-[60vh] cursor-pointer rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl"
+          className="relative w-full flex-1 min-h-[65vh] sm:min-h-[75vh] cursor-pointer rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl"
           onClick={handleCardClick}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoveredZone(null)}
@@ -392,34 +398,14 @@ export function FlashcardView({
                   >
                     {word.chinese}
                   </p>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSpeakChinese();
-                    }}
-                    className="mt-2 sm:mt-4 p-2.5 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                  >
-                    <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                  </button>
                 </>
               ) : (
-                <>
-                  <p
-                    className="font-body text-white font-bold leading-tight px-4"
-                    style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
-                  >
-                    {word.english}
-                  </p>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSpeakEnglish();
-                    }}
-                    className="mt-2 sm:mt-4 p-2.5 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                  >
-                    <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                  </button>
-                </>
+                <p
+                  className="font-body text-white font-bold leading-tight px-4"
+                  style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
+                >
+                  {word.english}
+                </p>
               )}
             </motion.div>
           </div>
