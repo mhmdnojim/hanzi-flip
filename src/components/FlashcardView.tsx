@@ -260,13 +260,13 @@ export function FlashcardView({
               <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
               <span>{favoritesCount}</span>
             </div>
-            <div className={cn(
+          <div className={cn(
               "text-xs sm:text-sm font-medium bg-white/10 rounded-full px-2 sm:px-3 py-1",
               completionPercentage < 30 && "text-orange-300",
               completionPercentage >= 30 && completionPercentage < 70 && "text-blue-300",
               completionPercentage >= 70 && "text-emerald-300"
             )}>
-              {completionPercentage}%
+              {Math.round(completionPercentage)}%
             </div>
           </div>
 
@@ -364,54 +364,64 @@ export function FlashcardView({
             </motion.div>
           )}
 
-          {/* Card Content - Centered */}
-          <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-8">
-            {showChinese ? (
-              <div className="text-center z-10 flex flex-col items-center gap-2">
-                {showPinyin && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-lg sm:text-xl md:text-2xl text-white/80 font-medium"
+          {/* Card Content - Centered with Flip Animation */}
+          <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-8" style={{ perspective: "1000px" }}>
+            <motion.div
+              key={`${word.id}-${showChinese ? 'chinese' : 'english'}`}
+              initial={{ rotateY: 90, opacity: 0 }}
+              animate={{ rotateY: 0, opacity: 1 }}
+              exit={{ rotateY: -90, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              style={{ transformStyle: "preserve-3d" }}
+              className="text-center z-10 flex flex-col items-center gap-2"
+            >
+              {showChinese ? (
+                <>
+                  {showPinyin && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-lg sm:text-xl md:text-2xl text-white/80 font-medium"
+                    >
+                      {word.pinyin}
+                    </motion.p>
+                  )}
+                  <p
+                    className="font-chinese text-white font-bold leading-tight"
+                    style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}
                   >
-                    {word.pinyin}
-                  </motion.p>
-                )}
-                <p
-                  className="font-chinese text-white font-bold leading-tight"
-                  style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}
-                >
-                  {word.chinese}
-                </p>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSpeakChinese();
-                  }}
-                  className="mt-2 sm:mt-4 p-2.5 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                >
-                  <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </button>
-              </div>
-            ) : (
-              <div className="text-center z-10 flex flex-col items-center gap-2">
-                <p
-                  className="font-body text-white font-bold leading-tight px-4"
-                  style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
-                >
-                  {word.english}
-                </p>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSpeakEnglish();
-                  }}
-                  className="mt-2 sm:mt-4 p-2.5 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                >
-                  <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </button>
-              </div>
-            )}
+                    {word.chinese}
+                  </p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSpeakChinese();
+                    }}
+                    className="mt-2 sm:mt-4 p-2.5 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                  >
+                    <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p
+                    className="font-body text-white font-bold leading-tight px-4"
+                    style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
+                  >
+                    {word.english}
+                  </p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSpeakEnglish();
+                    }}
+                    className="mt-2 sm:mt-4 p-2.5 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                  >
+                    <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  </button>
+                </>
+              )}
+            </motion.div>
           </div>
 
           {/* Bottom Section: Autoplay Controls + Progress */}
