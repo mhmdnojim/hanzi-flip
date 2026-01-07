@@ -70,6 +70,13 @@ export function useStudySession({
   const autoplayRepeatCountRef = useRef(autoplayRepeatCount);
   const isAutoplayRepeatingRef = useRef(isAutoplayRepeating);
 
+  // Keep callback props stable inside async loops (avoid effect restarts)
+  const getWordAtIndexRef = useRef(getWordAtIndex);
+
+  useEffect(() => {
+    getWordAtIndexRef.current = getWordAtIndex;
+  }, [getWordAtIndex]);
+
   useEffect(() => {
     languageGapRef.current = languageGap;
   }, [languageGap]);
@@ -236,6 +243,10 @@ export function useStudySession({
         // Deactivate repeat
         setRepeatModeState("off");
         setIsRepeatActive(false);
+
+        // Repeat should only happen when user explicitly presses Repeat
+        setIsAutoplayRepeating(false);
+        isAutoplayRepeatingRef.current = false;
       }
 
       // When autoplay is turned OFF, also turn OFF autoplay-repeat so it can't get stuck repeating.
@@ -296,7 +307,7 @@ export function useStudySession({
 
     const runAutoplay = async () => {
       while (playbackRunIdRef.current === runId) {
-        const word = getWordAtIndex(index);
+        const word = getWordAtIndexRef.current(index);
         if (!word) break;
 
         // How many times to repeat this word (0 = infinite)
@@ -358,7 +369,6 @@ export function useStudySession({
     isAutoplayActive,
     autoplayMode,
     totalWords,
-    getWordAtIndex,
     playOneCycle,
     wait,
     bumpPlaybackRunId,
@@ -383,7 +393,7 @@ export function useStudySession({
 
       let cycles = 0;
       while (cycles < repeatTimes && playbackRunIdRef.current === runId) {
-        const word = getWordAtIndex(index);
+        const word = getWordAtIndexRef.current(index);
         if (!word) break;
 
         const success = await playOneCycle(repeatMode, word, runId);
@@ -429,7 +439,6 @@ export function useStudySession({
     repeatMode,
     totalWords,
     currentIndex,
-    getWordAtIndex,
     playOneCycle,
     wait,
     bumpPlaybackRunId,
