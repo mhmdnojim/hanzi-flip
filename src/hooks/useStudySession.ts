@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { AutoplayMode } from "@/types/vocabulary";
+import { AutoplayMode, CustomSequenceStep } from "@/types/vocabulary";
 
 export type RepeatMode =
   | "off"
@@ -18,10 +18,14 @@ interface UseStudySessionProps {
   onFlip: () => void;
   speakChinese: (text: string) => Promise<void>;
   speakEnglish: (text: string) => Promise<void>;
-  getWordAtIndex: (index: number) => { chinese: string; english: string } | null;
+  getWordAtIndex: (index: number) => { chinese: string; english: string; example?: string } | null;
   isFlipped: boolean;
   languageGap: number;
   nextDelay: number;
+  /** When true, autoplay/repeat will speak the example sentence after the original. */
+  includeExampleInPlayback?: boolean;
+  /** User-defined custom playback sequence (used when autoplayMode === "custom") */
+  customSequence?: CustomSequenceStep[];
 }
 
 export function useStudySession({
@@ -33,6 +37,8 @@ export function useStudySession({
   isFlipped,
   languageGap,
   nextDelay,
+  includeExampleInPlayback = false,
+  customSequence = [],
 }: UseStudySessionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [startTime] = useState<Date>(new Date());
@@ -72,10 +78,14 @@ export function useStudySession({
 
   // Keep callback props stable inside async loops (avoid effect restarts)
   const getWordAtIndexRef = useRef(getWordAtIndex);
+  const includeExampleRef = useRef(includeExampleInPlayback);
+  const customSequenceRef = useRef(customSequence);
 
   useEffect(() => {
     getWordAtIndexRef.current = getWordAtIndex;
   }, [getWordAtIndex]);
+  useEffect(() => { includeExampleRef.current = includeExampleInPlayback; }, [includeExampleInPlayback]);
+  useEffect(() => { customSequenceRef.current = customSequence; }, [customSequence]);
 
   useEffect(() => {
     languageGapRef.current = languageGap;
@@ -176,10 +186,21 @@ export function useStudySession({
   const playOneCycle = useCallback(
     async (
       mode: AutoplayMode | RepeatMode,
-      word: { chinese: string; english: string },
+      word: { chinese: string; english: string; example?: string },
       runId: number
     ): Promise<boolean> => {
       if (mode === "off") return true;
+
+      const speakExampleIfEnabled = async (): Promise<boolean> => {
+        if (!includeExampleRef.current) return true;
+        if (!word.example || !word.example.trim()) return true;
+        if (playbackRunIdRef.current !== runId) return false;
+        await wait(Math.max(300, languageGapRef.current * 1000));
+        if (playbackRunIdRef.current !== runId) return false;
+        setCurrentlySpoken("chinese");
+        try { await speakChinese(word.example); } catch { return false; }
+        return playbackRunIdRef.current === runId;
+      };
 
       try {
         switch (mode) {
@@ -187,6 +208,7 @@ export function useStudySession({
             setDisplayMode("chinese");
             setCurrentlySpoken("chinese");
             await speakChinese(word.chinese);
+            if (!(await speakExampleIfEnabled())) return false;
             break;
 
           case "english":
@@ -199,6 +221,7 @@ export function useStudySession({
             setDisplayMode("chinese");
             setCurrentlySpoken("chinese");
             await speakChinese(word.chinese);
+            if (!(await speakExampleIfEnabled())) return false;
             if (playbackRunIdRef.current !== runId) return false;
 
             await wait(languageGapRef.current * 1000);
@@ -221,7 +244,39 @@ export function useStudySession({
             setDisplayMode("chinese");
             setCurrentlySpoken("chinese");
             await speakChinese(word.chinese);
+            if (!(await speakExampleIfEnabled())) return false;
             break;
+
+          case "custom": {
+            const seq = customSequenceRef.current || [];
+            const gapMs = languageGapRef.current * 1000;
+            for (let i = 0; i < seq.length; i++) {
+              const step = seq[i];
+              const reps = Math.max(1, step.repeat | 0);
+              for (let r = 0; r < reps; r++) {
+                if (playbackRunIdRef.current !== runId) return false;
+                if (step.track === "original") {
+                  setDisplayMode("chinese");
+                  setCurrentlySpoken("chinese");
+                  try { await speakChinese(word.chinese); } catch { return false; }
+                } else if (step.track === "translation") {
+                  setDisplayMode("english");
+                  setCurrentlySpoken("english");
+                  try { await speakEnglish(word.english); } catch { return false; }
+                } else if (step.track === "example") {
+                  if (!word.example || !word.example.trim()) break;
+                  setDisplayMode("chinese");
+                  setCurrentlySpoken("chinese");
+                  try { await speakChinese(word.example); } catch { return false; }
+                }
+                if (playbackRunIdRef.current !== runId) return false;
+                if (r < reps - 1) await wait(gapMs);
+              }
+              if (playbackRunIdRef.current !== runId) return false;
+              if (i < seq.length - 1) await wait(gapMs);
+            }
+            break;
+          }
         }
 
         setCurrentlySpoken(null);
