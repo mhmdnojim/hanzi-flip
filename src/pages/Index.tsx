@@ -1,13 +1,22 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { FlashcardView } from "@/components/FlashcardView";
 import { CompactToolbar } from "@/components/CompactToolbar";
+import { WordListPanel } from "@/components/WordListPanel";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useAudio } from "@/hooks/useAudio";
 import { useStudySession } from "@/hooks/useStudySession";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { parseExcelFile } from "@/utils/excelParser";
 import { useToast } from "@/hooks/use-toast";
+import { CustomSequenceStep } from "@/types/vocabulary";
+import {
+  loadSequencePresets, saveSequencePresets,
+  getLastActivePresetId, setLastActivePresetId,
+  genPresetId, sequenceSignature, type SequencePreset,
+} from "@/lib/sequencePresets";
+import { detectLanguageNameFromText } from "@/lib/detectLanguage";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const { toast } = useToast();
@@ -20,6 +29,25 @@ const Index = () => {
   const vocabulary = useVocabulary();
   const audio = useAudio();
 
+  // ── Excluded words (word-list panel) ──
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
+  const [showWordList, setShowWordList] = useState(false);
+
+  // Active deck = vocabulary words minus excluded
+  const activeWords = useMemo(
+    () => vocabulary.words.filter((w) => !excludedIds.has(w.id)),
+    [vocabulary.words, excludedIds]
+  );
+
+  // ── Local override of words for AI-generated example sentences ──
+  const [exampleOverrides, setExampleOverrides] = useState<Record<string, string>>({});
+  const wordsWithExamples = useMemo(
+    () => activeWords.map((w) => exampleOverrides[w.id]
+      ? { ...w, exampleSentence: exampleOverrides[w.id] }
+      : w),
+    [activeWords, exampleOverrides]
+  );
+
   const handleFlip = useCallback(() => {
     setIsFlipped((prev) => !prev);
     audio.playSoundEffect("flip");
@@ -28,22 +56,120 @@ const Index = () => {
   // State for timing controls
   const [nextDelay, setNextDelay] = useState(3);
   const [languageGap, setLanguageGap] = useState(1.5);
+  const [includeExample, setIncludeExample] = useState(false);
+
+  // ── Custom sequence + presets ──
+  const [sequencePresets, setSequencePresets] = useState<SequencePreset[]>(
+    () => loadSequencePresets()
+  );
+  const [activePresetId, setActivePresetId] = useState<string | null>(() => {
+    const id = getLastActivePresetId();
+    if (!id) return null;
+    return loadSequencePresets().some((p) => p.id === id) ? id : null;
+  });
+  const [customSequence, setCustomSequence] = useState<CustomSequenceStep[]>(() => {
+    const lastId = getLastActivePresetId();
+    if (lastId) {
+      const preset = loadSequencePresets().find((p) => p.id === lastId);
+      if (preset) return preset.steps;
+    }
+    try {
+      const saved = localStorage.getItem("flashcard_custom_sequence_v1");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed as CustomSequenceStep[];
+      }
+    } catch { /* ignore */ }
+    return [
+      { track: "original", repeat: 1 },
+      { track: "translation", repeat: 3 },
+    ];
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem("flashcard_custom_sequence_v1", JSON.stringify(customSequence)); } catch { /* ignore */ }
+  }, [customSequence]);
+  useEffect(() => { saveSequencePresets(sequencePresets); }, [sequencePresets]);
+  useEffect(() => { setLastActivePresetId(activePresetId); }, [activePresetId]);
+
+  const handleSelectPreset = useCallback((id: string) => {
+    const preset = sequencePresets.find((p) => p.id === id);
+    if (!preset) return;
+    setActivePresetId(id);
+    setCustomSequence(preset.steps);
+  }, [sequencePresets]);
+
+  const handleSaveAsPreset = useCallback((name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const id = genPresetId();
+    const next: SequencePreset = { id, name: trimmed, steps: customSequence, updatedAt: Date.now() };
+    setSequencePresets((prev) => [...prev, next]);
+    setActivePresetId(id);
+    toast({ title: `Saved sequence "${trimmed}"`, duration: 1500 });
+  }, [customSequence, toast]);
+
+  const handleUpdateActivePreset = useCallback(() => {
+    if (!activePresetId) return;
+    setSequencePresets((prev) => prev.map((p) =>
+      p.id === activePresetId ? { ...p, steps: customSequence, updatedAt: Date.now() } : p
+    ));
+    toast({ title: "Preset updated", duration: 1200 });
+  }, [activePresetId, customSequence, toast]);
+
+  const handleRenameActivePreset = useCallback((newName: string) => {
+    if (!activePresetId) return;
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    setSequencePresets((prev) => prev.map((p) =>
+      p.id === activePresetId ? { ...p, name: trimmed, updatedAt: Date.now() } : p
+    ));
+  }, [activePresetId]);
+
+  const handleDeleteActivePreset = useCallback(() => {
+    if (!activePresetId) return;
+    const target = sequencePresets.find((p) => p.id === activePresetId);
+    setSequencePresets((prev) => prev.filter((p) => p.id !== activePresetId));
+    setActivePresetId(null);
+    if (target) toast({ title: `Deleted "${target.name}"`, duration: 1200 });
+  }, [activePresetId, sequencePresets, toast]);
 
   const studySession = useStudySession({
-    totalWords: vocabulary.words.length,
+    totalWords: wordsWithExamples.length,
     onFlip: handleFlip,
     speakChinese: audio.speakChinese,
     speakEnglish: audio.speakEnglish,
     getWordAtIndex: useCallback(
-      (index: number) => vocabulary.words[index] || null,
-      [vocabulary.words]
+      (index: number) => {
+        const w = wordsWithExamples[index];
+        if (!w) return null;
+        return { chinese: w.chinese, english: w.english, example: w.exampleSentence };
+      },
+      [wordsWithExamples]
     ),
     isFlipped,
     languageGap,
     nextDelay,
+    includeExampleInPlayback: includeExample,
+    customSequence,
   });
 
-  const activeWord = vocabulary.words[studySession.currentIndex];
+  const activeWord = wordsWithExamples[studySession.currentIndex];
+
+  // Detect language labels from a sample word
+  const { originalLabel, translationLabel } = useMemo(() => {
+    const sample = vocabulary.words.find((w) => w.chinese);
+    return {
+      originalLabel: sample ? detectLanguageNameFromText(sample.chinese) : "Original",
+      translationLabel: sample ? detectLanguageNameFromText(sample.english) : "Translation",
+    };
+  }, [vocabulary.words]);
+
+  // Reset excluded words when deck changes
+  useEffect(() => {
+    setExcludedIds(new Set());
+    setExampleOverrides({});
+  }, [vocabulary.currentDeckId]);
 
   // Pronounce the visible language on the card
   const pronounceVisibleLanguage = useCallback((word: typeof activeWord, flipped: boolean) => {
@@ -68,10 +194,10 @@ const Index = () => {
     setIsFlipped(false);
     audio.playSoundEffect("navigate");
     setTimeout(() => {
-      const nextWord = vocabulary.words[studySession.currentIndex + 1] || vocabulary.words[0];
+      const nextWord = wordsWithExamples[studySession.currentIndex + 1] || wordsWithExamples[0];
       if (nextWord) pronounceVisibleLanguage(nextWord, false);
     }, 100);
-  }, [studySession, audio, vocabulary.words, pronounceVisibleLanguage]);
+  }, [studySession, audio, wordsWithExamples, pronounceVisibleLanguage]);
 
   const handlePrevious = useCallback(() => {
     studySession.goToPrevious();
@@ -79,10 +205,10 @@ const Index = () => {
     audio.playSoundEffect("navigate");
     setTimeout(() => {
       const prevIndex = studySession.currentIndex - 1;
-      const prevWord = vocabulary.words[prevIndex >= 0 ? prevIndex : vocabulary.words.length - 1];
+      const prevWord = wordsWithExamples[prevIndex >= 0 ? prevIndex : wordsWithExamples.length - 1];
       if (prevWord) pronounceVisibleLanguage(prevWord, false);
     }, 100);
-  }, [studySession, audio, vocabulary.words, pronounceVisibleLanguage]);
+  }, [studySession, audio, wordsWithExamples, pronounceVisibleLanguage]);
 
   const handleCorrect = useCallback(() => {
     if (activeWord) {
@@ -151,14 +277,75 @@ const Index = () => {
   });
 
   // Calculate counts
-  const favoritesCount = vocabulary.words.filter((w) => w.favorite).length;
-  const correctCount = vocabulary.words.filter((w) => w.correctCount > 0).length;
-  const incorrectCount = vocabulary.words.filter((w) => w.incorrectCount > 0).length;
+  const favoritesCount = wordsWithExamples.filter((w) => w.favorite).length;
+  const correctCount = wordsWithExamples.filter((w) => (w.correctCount || 0) > 0).length;
+  const incorrectCount = wordsWithExamples.filter((w) => (w.incorrectCount || 0) > 0).length;
+
+  // ── AI-generate example sentences ──
+  const [isGeneratingExamples, setIsGeneratingExamples] = useState(false);
+  const handleGenerateExamples = useCallback(async () => {
+    if (isGeneratingExamples) return;
+    const missing = wordsWithExamples.filter((w) => !w.exampleSentence && w.chinese);
+    if (missing.length === 0) {
+      toast({ title: "All cards already have an example sentence." });
+      return;
+    }
+    setIsGeneratingExamples(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-flashcard-examples", {
+        body: {
+          words: missing.map((w) => ({ original: w.chinese, translated: w.english })),
+          language: originalLabel,
+        },
+      });
+      if (error) throw error;
+      const examples: { word: string; sentence: string }[] = data?.examples || [];
+      if (examples.length === 0) {
+        toast({ title: "AI didn't return any examples.", variant: "destructive" });
+        return;
+      }
+      // Match each example back to its word (by original text)
+      const next: Record<string, string> = { ...exampleOverrides };
+      const remaining = [...examples];
+      for (const w of missing) {
+        const idx = remaining.findIndex((p) => p.word === w.chinese);
+        if (idx >= 0) {
+          next[w.id] = remaining[idx].sentence;
+          remaining.splice(idx, 1);
+        }
+      }
+      setExampleOverrides(next);
+      toast({ title: `Added ${Object.keys(next).length - Object.keys(exampleOverrides).length} examples.` });
+    } catch (e: any) {
+      console.error("generate examples failed:", e);
+      toast({
+        title: "Failed to generate examples",
+        description: e?.message || "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingExamples(false);
+    }
+  }, [isGeneratingExamples, wordsWithExamples, originalLabel, exampleOverrides, toast]);
+
+  // Jump-to from word-list panel
+  const handleJumpTo = useCallback((wordId: string) => {
+    const idx = wordsWithExamples.findIndex((w) => w.id === wordId);
+    if (idx >= 0) {
+      studySession.goToIndex(idx);
+      setIsFlipped(false);
+      setShowWordList(false);
+    }
+  }, [wordsWithExamples, studySession]);
 
   if (!activeWord) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">No vocabulary loaded</p>
+        <p className="text-muted-foreground">
+          {vocabulary.words.length === 0
+            ? "No vocabulary loaded"
+            : "All words excluded — open the word list to include some."}
+        </p>
       </div>
     );
   }
@@ -219,7 +406,7 @@ const Index = () => {
             currentlySpoken={studySession.currentlySpoken}
             // Progress & Stats
             currentIndex={studySession.currentIndex}
-            totalWords={vocabulary.words.length}
+            totalWords={wordsWithExamples.length}
             percentage={studySession.completionPercentage}
             onSeek={studySession.goToIndex}
             correctCount={correctCount}
@@ -239,10 +426,42 @@ const Index = () => {
             // Scoring
             onCorrect={handleCorrect}
             onIncorrect={handleIncorrect}
+            // ── Ported features ──
+            originalLabel={originalLabel}
+            translationLabel={translationLabel}
+            onSpeakExample={() => activeWord.exampleSentence && audio.speakChinese(activeWord.exampleSentence)}
+            includeExample={includeExample}
+            onIncludeExampleChange={setIncludeExample}
+            customSequence={customSequence}
+            onCustomSequenceChange={setCustomSequence}
+            sequencePresets={sequencePresets}
+            activePresetId={activePresetId}
+            onSelectPreset={handleSelectPreset}
+            onSaveAsPreset={handleSaveAsPreset}
+            onUpdateActivePreset={handleUpdateActivePreset}
+            onRenameActivePreset={handleRenameActivePreset}
+            onDeleteActivePreset={handleDeleteActivePreset}
+            onOpenWordList={() => setShowWordList(true)}
+            onGenerateExamples={handleGenerateExamples}
+            isGeneratingExamples={isGeneratingExamples}
           />
         </div>
 
       </div>
+
+      <WordListPanel
+        words={vocabulary.words}
+        excludedIds={excludedIds}
+        onExcludedChange={(next) => {
+          setExcludedIds(next);
+          studySession.goToIndex(0);
+          setIsFlipped(false);
+        }}
+        currentWordId={activeWord?.id}
+        onJumpTo={handleJumpTo}
+        open={showWordList}
+        onClose={() => setShowWordList(false)}
+      />
     </div>
   );
 };

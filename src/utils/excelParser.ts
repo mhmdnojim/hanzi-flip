@@ -30,6 +30,8 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
     const chineseHeaders = ["chinese", "中文", "hanzi", "character", "word"];
     const pinyinHeaders = ["pinyin", "拼音", "pronunciation"];
     const englishHeaders = ["english", "英文", "translation", "meaning", "definition"];
+    const exampleHeaders = ["example", "sentence", "例句", "example sentence", "context"];
+    const explanationHeaders = ["explanation", "note", "notes", "解释", "comment", "comments"];
     
     const findColumn = (headers: string[]) => {
       return keys.find((key) =>
@@ -40,6 +42,13 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
     const chineseCol = findColumn(chineseHeaders) || keys[0];
     const pinyinCol = findColumn(pinyinHeaders) || keys[1];
     const englishCol = findColumn(englishHeaders) || keys[2];
+    const exampleCol = findColumn(exampleHeaders);
+    const explanationCol = findColumn(explanationHeaders);
+
+    const reservedCols = new Set(
+      [chineseCol, pinyinCol, englishCol, exampleCol, explanationCol].filter(Boolean) as string[]
+    );
+    const extraCols = keys.filter((k) => !reservedCols.has(k));
 
     if (!chineseCol || !englishCol) {
       return {
@@ -51,15 +60,25 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
 
     const words: VocabularyWord[] = jsonData
       .filter((row) => row[chineseCol] && row[englishCol])
-      .map((row, index) => ({
-        id: `imported_${Date.now()}_${index}`,
-        chinese: String(row[chineseCol] || "").trim(),
-        pinyin: String(row[pinyinCol] || "").trim(),
-        english: String(row[englishCol] || "").trim(),
-        favorite: false,
-        correctCount: 0,
-        incorrectCount: 0,
-      }));
+      .map((row, index) => {
+        const extra: Record<string, string> = {};
+        for (const k of extraCols) {
+          const v = row[k];
+          if (v != null && String(v).trim()) extra[k] = String(v).trim();
+        }
+        return {
+          id: `imported_${Date.now()}_${index}`,
+          chinese: String(row[chineseCol] || "").trim(),
+          pinyin: String(row[pinyinCol] || "").trim(),
+          english: String(row[englishCol] || "").trim(),
+          exampleSentence: exampleCol ? String(row[exampleCol] || "").trim() || undefined : undefined,
+          explanation: explanationCol ? String(row[explanationCol] || "").trim() || undefined : undefined,
+          extraColumns: Object.keys(extra).length ? extra : undefined,
+          favorite: false,
+          correctCount: 0,
+          incorrectCount: 0,
+        };
+      });
 
     if (words.length === 0) {
       return {
