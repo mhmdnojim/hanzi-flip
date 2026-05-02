@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { VoiceType } from "@/types/vocabulary";
 import { supabase } from "@/integrations/supabase/client";
+import { detectLanguageCodeFromText } from "@/lib/detectLanguage";
 
 const SOUND_EFFECTS = {
   flip: "/sounds/flip.mp3",
@@ -19,7 +20,7 @@ export function useAudio() {
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const playFreeTTS = useCallback(
-    (text: string, lang: "zh-CN" | "en-US"): Promise<void> => {
+    (text: string, lang: string): Promise<void> => {
       if (voiceMuted) return Promise.resolve();
       
       if (!window.speechSynthesis) {
@@ -65,7 +66,7 @@ export function useAudio() {
   );
 
   const playPremiumTTS = useCallback(
-    async (text: string, lang: "zh-CN" | "en-US") => {
+    async (text: string, lang: string) => {
       if (voiceMuted) return;
 
       try {
@@ -119,7 +120,7 @@ export function useAudio() {
   );
 
   const speak = useCallback(
-    (text: string, lang: "zh-CN" | "en-US") => {
+    (text: string, lang: string) => {
       if (voiceType === "premium") {
         return playPremiumTTS(text, lang);
       }
@@ -128,13 +129,15 @@ export function useAudio() {
     [voiceType, playFreeTTS, playPremiumTTS]
   );
 
+  /** Speak the "original" side. Auto-detects language from the text. */
   const speakChinese = useCallback(
-    (text: string) => speak(text, "zh-CN"),
+    (text: string) => speak(text, detectLanguageCodeFromText(text)),
     [speak]
   );
 
+  /** Speak the "translation" side. Auto-detects language from the text. */
   const speakEnglish = useCallback(
-    (text: string) => speak(text, "en-US"),
+    (text: string) => speak(text, detectLanguageCodeFromText(text)),
     [speak]
   );
 
