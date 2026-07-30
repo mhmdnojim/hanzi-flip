@@ -904,7 +904,7 @@ export function FlashcardView(props: FlashcardViewProps) {
                     <select
                       value={activePresetId ?? ""}
                       onChange={(e) => e.target.value && onSelectPreset(e.target.value)}
-                      className="flex-1 max-w-[180px] text-[12px] rounded-md bg-white/10 border border-white/20 text-white px-2 py-1 outline-none"
+                      className="flex-1 max-w-[130px] text-[11px] rounded-md bg-white/10 border border-white/20 text-white px-1.5 py-1 outline-none"
                     >
                       <option value="" className="bg-neutral-900">— none —</option>
                       {sequencePresets.map((p) => (
@@ -918,7 +918,7 @@ export function FlashcardView(props: FlashcardViewProps) {
                         if (name) { onSaveAsPreset(name); setPresetSaveName(""); }
                       }}
                       disabled={customSequence.length === 0}
-                      className="ml-auto px-3 py-1 rounded-md text-[12px] font-semibold bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-40"
+                      className="ml-auto px-2 py-1 rounded-md text-[11px] font-semibold bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-40"
                     >
                       + Save as…
                     </button>
@@ -967,11 +967,11 @@ export function FlashcardView(props: FlashcardViewProps) {
                   </div>
 
                   {/* Add row */}
-                  <div className="flex items-center gap-2 mt-3 text-[12px]">
+                  <div className="flex items-center gap-1.5 mt-2.5 text-[11px]">
                     <span className="text-white/60">Add:</span>
-                    <button onClick={() => addStep("original")} className="px-2.5 py-1 rounded-md font-bold bg-emerald-600 text-white hover:bg-emerald-500">+ {originalLabel}</button>
-                    <button onClick={() => addStep("translation")} className="px-2.5 py-1 rounded-md font-bold bg-sky-600 text-white hover:bg-sky-500">+ {translationLabel}</button>
-                    <button onClick={() => addStep("example")} className="px-2.5 py-1 rounded-md font-bold bg-amber-600 text-white hover:bg-amber-500">+ Example</button>
+                    <button onClick={() => addStep("original")} className="px-2 py-1 rounded-md font-bold bg-emerald-600 text-white hover:bg-emerald-500 truncate">+ {originalLabel}</button>
+                    <button onClick={() => addStep("translation")} className="px-2 py-1 rounded-md font-bold bg-sky-600 text-white hover:bg-sky-500 truncate">+ {translationLabel}</button>
+                    <button onClick={() => addStep("example")} className="px-2 py-1 rounded-md font-bold bg-amber-600 text-white hover:bg-amber-500">+ Example</button>
                   </div>
                 </div>
               )}
