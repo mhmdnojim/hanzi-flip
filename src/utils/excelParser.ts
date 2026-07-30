@@ -41,20 +41,25 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
       detected[h] = detectLanguageFromHeader(h);
     });
 
-    // A bare "Transcription" / "Pinyin" column belongs to the nearest language column
+    // A bare "Transcription" / "Latin" / "Pinyin" column belongs to the nearest language
+    // column — preferring the one immediately to its left (the usual layout).
     headers.forEach((header, index) => {
       const key = header.toLowerCase().trim();
       if (!BARE.test(key)) return;
       const neighbours = [...headers.slice(0, index).reverse(), ...headers.slice(index + 1)];
+      let anchored = false;
       for (const other of neighbours) {
         const otherCode = detected[other];
         if (!otherCode || getLanguage(otherCode).romanizationOf) continue;
         const rom = romanizationCodeFor(otherCode);
         if (rom) {
           detected[header] = rom;
-          return;
+          anchored = true;
+          break;
         }
       }
+      // Never let a generic header keep a guessed language (e.g. "Transliteration" -> Arabic)
+      if (!anchored) detected[header] = null;
     });
 
     // header -> language, first occurrence of each language wins
@@ -125,7 +130,7 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
           incorrectCount: 0,
         } satisfies VocabularyWord;
       })
-      .filter((w) => w.chinese);
+      .filter((w) => Object.keys(w.values ?? {}).length > 0);
 
     if (words.length === 0) {
       return {
