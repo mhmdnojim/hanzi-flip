@@ -198,6 +198,7 @@ export function useStudySession({
 
       const speakExampleIfEnabled = async (): Promise<boolean> => {
         if (!includeExampleRef.current) return true;
+        if (pronounceExampleRef.current) return true; // already spoken in place of the word
         if (!word.example || !word.example.trim()) return true;
         if (playbackRunIdRef.current !== runId) return false;
         await wait(Math.max(300, languageGapRef.current * 1000));
@@ -207,12 +208,16 @@ export function useStudySession({
         return playbackRunIdRef.current === runId;
       };
 
+      const hasExample = !!(word.example && word.example.trim());
+      // When "pronounce example" is on, the original utterance is the example sentence.
+      const originalText = pronounceExampleRef.current && hasExample ? word.example! : word.chinese;
+
       try {
         switch (mode) {
           case "chinese":
             setDisplayMode("chinese");
             setCurrentlySpoken("chinese");
-            await speakChinese(word.chinese);
+            await speakChinese(originalText);
             if (!(await speakExampleIfEnabled())) return false;
             break;
 
@@ -225,7 +230,7 @@ export function useStudySession({
           case "chinese-to-english":
             setDisplayMode("chinese");
             setCurrentlySpoken("chinese");
-            await speakChinese(word.chinese);
+            await speakChinese(originalText);
             if (!(await speakExampleIfEnabled())) return false;
             if (playbackRunIdRef.current !== runId) return false;
 
@@ -248,31 +253,42 @@ export function useStudySession({
 
             setDisplayMode("chinese");
             setCurrentlySpoken("chinese");
-            await speakChinese(word.chinese);
+            await speakChinese(originalText);
             if (!(await speakExampleIfEnabled())) return false;
             break;
 
           case "custom": {
-            const seq = customSequenceRef.current || [];
+            const rawSeq = customSequenceRef.current || [];
+            // Default fallback when custom mode is on but no steps were defined.
+            const seq = rawSeq.length > 0
+              ? rawSeq
+              : ([{ track: "original", repeat: 1 }, { track: "translation", repeat: 1 }] as CustomSequenceStep[]);
             const gapMs = languageGapRef.current * 1000;
             for (let i = 0; i < seq.length; i++) {
               const step = seq[i];
               const reps = Math.max(1, step.repeat | 0);
+              // Skip example steps entirely when this word has no example (never hang).
+              if (step.track === "example" && !hasExample) continue;
               for (let r = 0; r < reps; r++) {
                 if (playbackRunIdRef.current !== runId) return false;
                 if (step.track === "original") {
                   setDisplayMode("chinese");
                   setCurrentlySpoken("chinese");
-                  try { await speakChinese(word.chinese); } catch { return false; }
+                  try { await speakChinese(originalText); } catch { return false; }
+                  if (includeExampleRef.current && !pronounceExampleRef.current && hasExample) {
+                    if (playbackRunIdRef.current !== runId) return false;
+                    await wait(Math.max(300, gapMs));
+                    if (playbackRunIdRef.current !== runId) return false;
+                    try { await speakChinese(word.example!); } catch { return false; }
+                  }
                 } else if (step.track === "translation") {
                   setDisplayMode("english");
                   setCurrentlySpoken("english");
                   try { await speakEnglish(word.english); } catch { return false; }
                 } else if (step.track === "example") {
-                  if (!word.example || !word.example.trim()) break;
                   setDisplayMode("chinese");
                   setCurrentlySpoken("chinese");
-                  try { await speakChinese(word.example); } catch { return false; }
+                  try { await speakChinese(word.example!); } catch { return false; }
                 }
                 if (playbackRunIdRef.current !== runId) return false;
                 if (r < reps - 1) await wait(gapMs);
