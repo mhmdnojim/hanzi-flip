@@ -16,6 +16,11 @@ import {
   genPresetId, sequenceSignature, type SequencePreset,
 } from "@/lib/sequencePresets";
 import { detectLanguageNameFromText } from "@/lib/detectLanguage";
+import { getLanguage } from "@/utils/languages";
+import {
+  applyTheme, loadThemeId, saveThemeId,
+  FONT_SIZE_PX, type FontSizePreset,
+} from "@/utils/themes";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
@@ -23,8 +28,20 @@ const Index = () => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [showPinyin, setShowPinyin] = useState(true);
   const [showChineseFirst, setShowChineseFirst] = useState(true);
-  const [fontSize, setFontSize] = useState(72);
+  const [fontSizePreset, setFontSizePreset] = useState<FontSizePreset>("medium");
+  const [fontSize, setFontSize] = useState(FONT_SIZE_PX.medium);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [themeId, setThemeId] = useState<string>(() => loadThemeId());
+
+  useEffect(() => {
+    applyTheme(themeId);
+    saveThemeId(themeId);
+  }, [themeId]);
+
+  const handleFontSizePresetChange = useCallback((preset: FontSizePreset) => {
+    setFontSizePreset(preset);
+    setFontSize(FONT_SIZE_PX[preset]);
+  }, []);
 
   const vocabulary = useVocabulary();
   const audio = useAudio();
@@ -156,14 +173,9 @@ const Index = () => {
 
   const activeWord = wordsWithExamples[studySession.currentIndex];
 
-  // Detect language labels from a sample word
-  const { originalLabel, translationLabel } = useMemo(() => {
-    const sample = vocabulary.words.find((w) => w.chinese);
-    return {
-      originalLabel: sample ? detectLanguageNameFromText(sample.chinese) : "Original",
-      translationLabel: sample ? detectLanguageNameFromText(sample.english) : "Translation",
-    };
-  }, [vocabulary.words]);
+  // Language labels come from the selected study / translation languages
+  const originalLabel = getLanguage(vocabulary.studyLang).name;
+  const translationLabel = getLanguage(vocabulary.translationLang).name;
 
   // Reset excluded words when deck changes
   useEffect(() => {
@@ -245,10 +257,12 @@ const Index = () => {
     async (file: File) => {
       const result = await parseExcelFile(file);
       if (result.success) {
-        vocabulary.addDeck(result.filename || "Imported Deck", result.words);
+        vocabulary.addDeck(result.filename || "Imported Deck", result.words, result.languages);
         toast({
           title: "Import successful!",
-          description: `Added ${result.words.length} words`,
+          description: `Added ${result.words.length} words${
+            result.languages?.length ? ` · ${result.languages.length} languages` : ""
+          }`,
         });
       } else {
         toast({
@@ -260,11 +274,6 @@ const Index = () => {
     },
     [vocabulary, toast]
   );
-
-  // Dark mode toggle
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDarkMode);
-  }, [isDarkMode]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -359,7 +368,17 @@ const Index = () => {
           decks={vocabulary.decks}
           currentDeckId={vocabulary.currentDeckId}
           onDeckChange={vocabulary.setCurrentDeckId}
+          onDeleteDeck={vocabulary.deleteDeck}
           onImport={handleImport}
+          availableLanguages={vocabulary.availableLanguages}
+          studyLang={vocabulary.studyLang}
+          translationLang={vocabulary.translationLang}
+          onStudyLangChange={(code) => { vocabulary.setStudyLang(code); setIsFlipped(false); }}
+          onTranslationLangChange={(code) => { vocabulary.setTranslationLang(code); setIsFlipped(false); }}
+          themeId={themeId}
+          onThemeChange={setThemeId}
+          fontSizePreset={fontSizePreset}
+          onFontSizePresetChange={handleFontSizePresetChange}
           showPinyin={showPinyin}
           onTogglePinyin={() => setShowPinyin(!showPinyin)}
           showChineseFirst={showChineseFirst}
