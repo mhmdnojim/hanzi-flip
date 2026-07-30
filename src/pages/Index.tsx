@@ -254,20 +254,32 @@ const Index = () => {
   }, [vocabulary, studySession, toast]);
 
   const handleImport = useCallback(
-    async (file: File) => {
-      const result = await parseExcelFile(file);
-      if (result.success) {
-        vocabulary.addDeck(result.filename || "Imported Deck", result.words, result.languages);
+    async (files: File[]) => {
+      let imported = 0;
+      let totalWords = 0;
+      const failed: string[] = [];
+
+      for (const file of files) {
+        const result = await parseExcelFile(file);
+        if (result.success) {
+          vocabulary.addDeck(result.filename || file.name, result.words, result.languages);
+          imported += 1;
+          totalWords += result.words.length;
+        } else {
+          failed.push(`${file.name}: ${result.error}`);
+        }
+      }
+
+      if (imported > 0) {
         toast({
           title: "Import successful!",
-          description: `Added ${result.words.length} words${
-            result.languages?.length ? ` · ${result.languages.length} languages` : ""
-          }`,
+          description: `${imported} file${imported > 1 ? "s" : ""} · ${totalWords} words`,
         });
-      } else {
+      }
+      if (failed.length) {
         toast({
-          title: "Import failed",
-          description: result.error,
+          title: `Import failed for ${failed.length} file${failed.length > 1 ? "s" : ""}`,
+          description: failed.join(" | "),
           variant: "destructive",
         });
       }
