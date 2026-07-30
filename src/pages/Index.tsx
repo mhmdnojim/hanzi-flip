@@ -491,6 +491,7 @@ const Index = () => {
             onOpenWordList={() => setShowWordList(true)}
             onGenerateExamples={handleGenerateExamples}
             isGeneratingExamples={isGeneratingExamples}
+            onEditWord={(patch) => vocabulary.updateWord(activeWord.id, patch)}
           />
         </div>
 
