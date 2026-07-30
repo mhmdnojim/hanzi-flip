@@ -50,7 +50,7 @@ interface CompactToolbarProps {
   currentDeckId: string;
   onDeckChange: (deckId: string) => void;
   onDeleteDeck: (deckId: string) => void;
-  onImport: (file: File) => void;
+  onImport: (files: File[]) => void;
   /** Multi-language selection */
   availableLanguages: string[];
   studyLang: string;
@@ -81,9 +81,9 @@ interface CompactToolbarProps {
 
 export function CompactToolbar(props: CompactToolbarProps) {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      props.onImport(file);
+    const files = Array.from(e.target.files ?? []);
+    if (files.length) {
+      props.onImport(files);
     }
     e.target.value = "";
   };
@@ -144,12 +144,12 @@ export function CompactToolbar(props: CompactToolbarProps) {
             >
               <label className="cursor-pointer">
                 <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileUpload} />
+                <input type="file" accept=".xlsx,.xls" multiple className="hidden" onChange={handleFileUpload} />
               </label>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Upload Excel file</p>
+            <p>Upload Excel file(s) — you can select several at once</p>
           </TooltipContent>
         </Tooltip>
 
