@@ -128,6 +128,7 @@ export function FlashcardView(props: FlashcardViewProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [userFlipOverride, setUserFlipOverride] = useState(false);
   const [showSequenceEditor, setShowSequenceEditor] = useState(false);
+  const seqClickStage = useRef<0 | 1 | 2>(0);
   const [renamingActive, setRenamingActive] = useState(false);
   const [renameDraft, setRenameDraft] = useState("");
   const [presetSaveName, setPresetSaveName] = useState("");
@@ -987,114 +988,6 @@ export function FlashcardView(props: FlashcardViewProps) {
               </div>
             )}
 
-            {/* Custom sequence editor (SyncScript-style floating panel) */}
-            <div className="relative">
-              {showSequenceEditor && (
-                <div
-                  className="absolute bottom-full mb-2 left-0 z-40 w-[350px] max-w-[92vw] rounded-xl border border-white/15 bg-neutral-900/95 backdrop-blur-md p-2.5 shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Header */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[13px] font-semibold text-white">Custom sequence (per word)</span>
-                    <button
-                      onClick={() => {
-                        if (autoplayMode === "custom" && isAutoplayActive) onAutoplayModeChange("off");
-                        else onAutoplayModeChange("custom");
-                      }}
-                      disabled={customSequence.length === 0}
-                      className={cn(
-                        "ml-auto px-3 py-1 rounded-full text-[12px] font-semibold transition-colors disabled:opacity-40",
-                        autoplayMode === "custom" && isAutoplayActive
-                          ? "bg-emerald-500 text-white"
-                          : "bg-white/15 text-white hover:bg-white/25"
-                      )}
-                    >
-                      {autoplayMode === "custom" && isAutoplayActive ? "Stop" : "Play this sequence"}
-                    </button>
-                    <button onClick={() => setShowSequenceEditor(false)} className="p-1 rounded-full text-white/70 hover:bg-white/15">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Preset row */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[12px] text-white/60">Preset:</span>
-                    <select
-                      value={activePresetId ?? ""}
-                      onChange={(e) => e.target.value && onSelectPreset(e.target.value)}
-                      className="flex-1 max-w-[130px] text-[11px] rounded-md bg-white/10 border border-white/20 text-white px-1.5 py-1 outline-none"
-                    >
-                      <option value="" className="bg-neutral-900">— none —</option>
-                      {sequencePresets.map((p) => (
-                        <option key={p.id} value={p.id} className="bg-neutral-900">{p.name}</option>
-                      ))}
-                    </select>
-                    {isDirty && <span className="text-amber-300 text-[12px]">•</span>}
-                    <button
-                      onClick={() => {
-                        const name = presetSaveName.trim() || window.prompt("Save sequence as:")?.trim();
-                        if (name) { onSaveAsPreset(name); setPresetSaveName(""); }
-                      }}
-                      disabled={customSequence.length === 0}
-                      className="ml-auto px-2 py-1 rounded-md text-[11px] font-semibold bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-40"
-                    >
-                      + Save as…
-                    </button>
-                  </div>
-
-                  {/* Steps */}
-                  <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
-                    {customSequence.map((step, i) => (
-                      <div key={i} className="flex items-center gap-1.5">
-                        <span className="w-5 text-right text-[12px] text-white/60">{i + 1}.</span>
-                        <select
-                          value={step.track}
-                          onChange={(e) => updateStep(i, { track: e.target.value as CustomSequenceTrack })}
-                          className={cn(
-                            "flex-1 min-w-0 text-[12px] font-bold rounded-md px-2 py-1 text-white border outline-none",
-                            trackColor[step.track]
-                          )}
-                        >
-                          <option value="original" className="bg-neutral-900">{originalLabel}</option>
-                          <option value="translation" className="bg-neutral-900">{translationLabel}</option>
-                          <option value="example" className="bg-neutral-900">Example sentence</option>
-                        </select>
-                        <div className="flex items-center rounded-md border border-white/20 bg-white/5 text-white text-[12px]">
-                          <button onClick={() => updateStep(i, { repeat: Math.max(1, step.repeat - 1) })} className="px-1.5 py-1 hover:bg-white/15 rounded-l-md">
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="px-1.5 min-w-[26px] text-center">×{step.repeat}</span>
-                          <button onClick={() => updateStep(i, { repeat: step.repeat + 1 })} className="px-1.5 py-1 hover:bg-white/15 rounded-r-md">
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-                        <button onClick={() => moveStep(i, -1)} disabled={i === 0} className="p-1 rounded text-white/70 hover:bg-white/15 disabled:opacity-25">
-                          <ArrowUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => moveStep(i, 1)} disabled={i === customSequence.length - 1} className="p-1 rounded text-white/70 hover:bg-white/15 disabled:opacity-25">
-                          <ArrowDown className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => removeStep(i)} className="p-1 rounded text-red-400 hover:bg-white/15">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                    {customSequence.length === 0 && (
-                      <span className="text-[12px] text-white/50 italic">Empty — add steps below.</span>
-                    )}
-                  </div>
-
-                  {/* Add row */}
-                  <div className="flex items-center gap-1.5 mt-2.5 text-[11px]">
-                    <span className="text-white/60">Add:</span>
-                    <button onClick={() => addStep("original")} className="px-2 py-1 rounded-md font-bold bg-emerald-600 text-white hover:bg-emerald-500 truncate">+ {originalLabel}</button>
-                    <button onClick={() => addStep("translation")} className="px-2 py-1 rounded-md font-bold bg-sky-600 text-white hover:bg-sky-500 truncate">+ {translationLabel}</button>
-                    <button onClick={() => addStep("example")} className="px-2 py-1 rounded-md font-bold bg-amber-600 text-white hover:bg-amber-500">+ Example</button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </motion.div>
 
