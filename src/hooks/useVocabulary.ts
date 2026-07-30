@@ -48,6 +48,24 @@ export function useVocabulary() {
 
   const transcriptionLang = romanizationCodeFor(activeStudyLang);
 
+  /** Pick the front language; if it's currently the back language, swap the two */
+  const chooseStudyLang = useCallback(
+    (code: string) => {
+      setStudyLang(code);
+      setTranslationLang((prev) => (prev === code ? activeStudyLang : prev));
+    },
+    [activeStudyLang],
+  );
+
+  /** Pick the back language; if it's currently the front language, swap the two */
+  const chooseTranslationLang = useCallback(
+    (code: string) => {
+      setTranslationLang(code);
+      setStudyLang((prev) => (prev === code ? activeTranslationLang : prev));
+    },
+    [activeTranslationLang],
+  );
+
   // Project every word onto the selected study / translation languages
   const projectedWords: VocabularyWord[] = currentDeck.words.map((w) => {
     const values = wordValues(w);
@@ -278,8 +296,8 @@ export function useVocabulary() {
     availableLanguages,
     studyLang: activeStudyLang,
     translationLang: activeTranslationLang,
-    setStudyLang,
-    setTranslationLang,
+    setStudyLang: chooseStudyLang,
+    setTranslationLang: chooseTranslationLang,
     setStorageMode,
     setCurrentDeckId,
     addDeck,
