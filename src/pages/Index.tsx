@@ -377,6 +377,12 @@ const Index = () => {
             ? "No vocabulary loaded"
             : "All words excluded — open the word list to include some."}
         </p>
+        <ColumnMappingDialog
+          preview={previewQueue[0] ?? null}
+          remaining={Math.max(previewQueue.length - 1, 0)}
+          onConfirm={handleConfirmMapping}
+          onCancel={() => setPreviewQueue((prev) => prev.slice(1))}
+        />
       </div>
     );
   }
