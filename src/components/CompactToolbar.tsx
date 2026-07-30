@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/tooltip";
 import { VoiceType, VocabularyDeck } from "@/types/vocabulary";
 import { getLanguage } from "@/utils/languages";
-import { THEMES, getTheme, nextThemeId, FontSizePreset, nextFontSize } from "@/utils/themes";
+import { getTheme, nextThemeId, FontSizePreset, nextFontSize } from "@/utils/themes";
 import { cn } from "@/lib/utils";
 
 interface CompactToolbarProps {
@@ -345,8 +345,7 @@ export function CompactToolbar(props: CompactToolbarProps) {
         </Tooltip>
 
         {/* Theme — each tap switches to the next theme */}
-        <DropdownMenu>
-          <Tooltip>
+        <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
@@ -367,24 +366,7 @@ export function CompactToolbar(props: CompactToolbarProps) {
             <TooltipContent>
               <p>Theme: {activeTheme.name} — click for {getTheme(nextThemeId(props.themeId)).name}</p>
             </TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent>
-            {THEMES.map((theme) => (
-              <DropdownMenuItem
-                key={theme.id}
-                onClick={() => props.onThemeChange(theme.id)}
-                className={cn(theme.id === props.themeId && "bg-accent")}
-              >
-                <span className="mr-2 flex h-3.5 w-3.5 overflow-hidden rounded-full border border-border">
-                  {theme.swatch.map((color, i) => (
-                    <span key={i} className="h-full flex-1" style={{ backgroundColor: `hsl(${color})` }} />
-                  ))}
-                </span>
-                {theme.name}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        </Tooltip>
 
         {/* Voice Type */}
         <Tooltip>
