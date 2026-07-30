@@ -872,7 +872,7 @@ export function FlashcardView(props: FlashcardViewProps) {
             <div className="relative">
               {showSequenceEditor && (
                 <div
-                  className="absolute bottom-1 left-0 z-40 w-[430px] max-w-[92vw] rounded-2xl border border-white/15 bg-neutral-900/95 backdrop-blur-md p-3 shadow-2xl"
+                  className="absolute bottom-full mb-2 left-0 z-40 w-[350px] max-w-[92vw] rounded-xl border border-white/15 bg-neutral-900/95 backdrop-blur-md p-2.5 shadow-2xl"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Header */}
