@@ -781,12 +781,12 @@ export function FlashcardView(props: FlashcardViewProps) {
               {/* Custom sequence editor (floating panel, anchored above the icon) */}
               {showSequenceEditor && (
                 <div
-                  className="absolute bottom-full mb-3 left-0 z-50 w-[300px] max-w-[88vw] rounded-lg border border-white/15 bg-neutral-900/95 backdrop-blur-md p-2 shadow-2xl"
+                  className="absolute bottom-full mb-3 right-0 z-50 w-[320px] max-w-[88vw] rounded-lg border border-white/15 bg-neutral-900/95 backdrop-blur-md p-2 shadow-2xl"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Header */}
                   <div className="flex items-center gap-1.5 mb-2">
-                    <span className="text-[11px] font-semibold text-white leading-tight">Custom sequence (per word)</span>
+                    <span className="text-[11px] font-semibold text-white leading-tight whitespace-nowrap">Custom sequence (per word)</span>
                     <button
                       onClick={() => {
                         if (autoplayMode === "custom" && isAutoplayActive) onAutoplayModeChange("off");
@@ -794,7 +794,7 @@ export function FlashcardView(props: FlashcardViewProps) {
                       }}
                       disabled={customSequence.length === 0}
                       className={cn(
-                        "ml-auto shrink-0 px-2 py-[3px] rounded-full text-[10px] font-semibold transition-colors disabled:opacity-40",
+                        "ml-auto shrink-0 min-w-[104px] text-center px-2 py-[3px] rounded-full text-[10px] font-semibold whitespace-nowrap transition-colors disabled:opacity-40",
                         autoplayMode === "custom" && isAutoplayActive
                           ? "bg-emerald-500 text-white"
                           : "bg-white/15 text-white hover:bg-white/25"
