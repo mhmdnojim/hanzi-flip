@@ -12,6 +12,13 @@ export interface VocabularyWord {
   explanation?: string;
   /** Example sentence in the same language as `chinese` (the original) */
   exampleSentence?: string;
+  /** Translation of the example sentence (translation side) */
+  exampleTranslation?: string;
+  /** Romanization of the example sentence */
+  examplePinyin?: string;
+  isIdiom?: boolean;
+  isPhrasalVerb?: boolean;
+  isCollocation?: boolean;
   /** Extra columns from the imported spreadsheet (label -> text) */
   extraColumns?: Record<string, string>;
 }
