@@ -2,3 +2,6 @@ project_id = "qzmahkwcwdybvedjzgcl"
 
 [functions.text-to-speech]
 verify_jwt = false
+
+[functions.classify-words]
+verify_jwt = false
