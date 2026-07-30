@@ -3,6 +3,8 @@ export interface VocabularyWord {
   chinese: string;
   pinyin: string;
   english: string;
+  /** language code -> text, for multi-language imported sheets */
+  values?: Record<string, string>;
   favorite?: boolean;
   correctCount?: number;
   incorrectCount?: number;
@@ -19,6 +21,8 @@ export interface VocabularyDeck {
   name: string;
   words: VocabularyWord[];
   createdAt: Date;
+  /** language codes present in this deck (real languages + transcriptions) */
+  languages?: string[];
 }
 
 export interface StudyProgress {

@@ -11,6 +11,9 @@ import {
   ChevronDown,
   Languages,
   Type as TypeIcon,
+  Trash2,
+  Palette,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,12 +23,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { VoiceType, VocabularyDeck } from "@/types/vocabulary";
+import { getLanguage } from "@/utils/languages";
+import { getTheme, nextThemeId, FontSizePreset, nextFontSize } from "@/utils/themes";
 import { cn } from "@/lib/utils";
 
 interface CompactToolbarProps {
@@ -33,7 +49,19 @@ interface CompactToolbarProps {
   decks: VocabularyDeck[];
   currentDeckId: string;
   onDeckChange: (deckId: string) => void;
+  onDeleteDeck: (deckId: string) => void;
   onImport: (file: File) => void;
+  /** Multi-language selection */
+  availableLanguages: string[];
+  studyLang: string;
+  translationLang: string;
+  onStudyLangChange: (code: string) => void;
+  onTranslationLangChange: (code: string) => void;
+  /** Theme + text size */
+  themeId: string;
+  onThemeChange: (id: string) => void;
+  fontSizePreset: FontSizePreset;
+  onFontSizePresetChange: (size: FontSizePreset) => void;
   showPinyin: boolean;
   onTogglePinyin: () => void;
   showChineseFirst: boolean;
@@ -57,7 +85,13 @@ export function CompactToolbar(props: CompactToolbarProps) {
     if (file) {
       props.onImport(file);
     }
+    e.target.value = "";
   };
+
+  const studyLanguage = getLanguage(props.studyLang);
+  const translationLanguage = getLanguage(props.translationLang);
+  const activeTheme = getTheme(props.themeId);
+  const canDelete = props.decks.length > 1 || props.currentDeckId !== "sample";
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -66,7 +100,7 @@ export function CompactToolbar(props: CompactToolbarProps) {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2"
       >
-        {/* Deck Selector */}
+        {/* Level / file selector (HSK1, HSK2, …) */}
         <DropdownMenu>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -74,15 +108,16 @@ export function CompactToolbar(props: CompactToolbarProps) {
                 <Button 
                   variant="secondary" 
                   size="sm" 
-                  className="h-8 sm:h-9 px-2 sm:px-3 gap-1 text-xs sm:text-sm rounded-full"
+                  className="h-8 sm:h-9 px-2 sm:px-3 gap-1 text-xs sm:text-sm rounded-full max-w-[10rem]"
                 >
-                  📄 <span className="hidden sm:inline">{props.deckName}</span>
+                  <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{props.deckName}</span>
                   <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Select vocabulary deck</p>
+              <p>Select level / vocabulary file</p>
             </TooltipContent>
           </Tooltip>
           <DropdownMenuContent>
@@ -117,6 +152,105 @@ export function CompactToolbar(props: CompactToolbarProps) {
             <p>Upload Excel file</p>
           </TooltipContent>
         </Tooltip>
+
+        {/* Delete current file */}
+        {canDelete && (
+          <AlertDialog>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border-destructive text-destructive hover:bg-destructive/10"
+                    aria-label={`Delete ${props.deckName}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </Button>
+                </AlertDialogTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Delete "{props.deckName}"</p>
+              </TooltipContent>
+            </Tooltip>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete "{props.deckName}"?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently removes the file and all of its words. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel autoFocus>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => props.onDeleteDeck(props.currentDeckId)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete permanently
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+
+        {/* Study language */}
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="sm" className="h-8 sm:h-9 px-2 sm:px-3 gap-1 text-xs sm:text-sm rounded-full">
+                  <Languages className="w-3.5 h-3.5" />
+                  {studyLanguage.short}
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Language you practise: {studyLanguage.name}</p>
+            </TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent>
+            {props.availableLanguages.map((code) => (
+              <DropdownMenuItem
+                key={code}
+                onClick={() => props.onStudyLangChange(code)}
+                className={cn(code === props.studyLang && "bg-accent")}
+              >
+                {getLanguage(code).name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Translation language */}
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 sm:h-9 px-2 sm:px-3 gap-1 text-xs sm:text-sm rounded-full">
+                  → {translationLanguage.short}
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Translation shown: {translationLanguage.name}</p>
+            </TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent>
+            {props.availableLanguages
+              .filter((code) => code !== props.studyLang)
+              .map((code) => (
+                <DropdownMenuItem
+                  key={code}
+                  onClick={() => props.onTranslationLangChange(code)}
+                  className={cn(code === props.translationLang && "bg-accent")}
+                >
+                  {getLanguage(code).name}
+                </DropdownMenuItem>
+              ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Shuffle / Sequential */}
         <Tooltip>
@@ -155,15 +289,19 @@ export function CompactToolbar(props: CompactToolbarProps) {
               className="h-8 sm:h-9 w-16 sm:w-20 rounded-full bg-primary hover:bg-primary/90 text-xs sm:text-sm"
             >
               <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
-              {props.showChineseFirst ? "中" : "EN"}
+              {props.showChineseFirst ? studyLanguage.short : translationLanguage.short}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{props.showChineseFirst ? "Show English on front" : "Show Chinese on front"}</p>
+            <p>
+              {props.showChineseFirst
+                ? `Show ${translationLanguage.name} on front`
+                : `Show ${studyLanguage.name} on front`}
+            </p>
           </TooltipContent>
         </Tooltip>
 
-        {/* Pinyin Toggle */}
+        {/* Transcription toggle (Pinyin / Latin transliteration) */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -179,8 +317,55 @@ export function CompactToolbar(props: CompactToolbarProps) {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{props.showPinyin ? "Hide Pinyin" : "Show Pinyin"}</p>
+            <p>
+              {props.showPinyin ? "Hide" : "Show"} {studyLanguage.romanizationLabel || "transcription"}
+            </p>
           </TooltipContent>
+        </Tooltip>
+
+        {/* Text size — cycles S → M → L → XL */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 sm:h-9 px-2 gap-1 rounded-full text-xs"
+              onClick={() => props.onFontSizePresetChange(nextFontSize(props.fontSizePreset))}
+              aria-label={`Text size ${props.fontSizePreset}, click to change`}
+            >
+              <TypeIcon className="w-3.5 h-3.5" />
+              <span className="uppercase tracking-wide">
+                {props.fontSizePreset === "x-large" ? "XL" : props.fontSizePreset.charAt(0)}
+              </span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Text size: {props.fontSizePreset} — click for {nextFontSize(props.fontSizePreset)}</p>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Theme — each tap switches to the next theme */}
+        <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 sm:h-9 px-2 gap-1.5 rounded-full"
+                onClick={() => props.onThemeChange(nextThemeId(props.themeId))}
+                onContextMenu={(e) => e.preventDefault()}
+                aria-label={`Theme ${activeTheme.name}, click to change`}
+              >
+                <Palette className="w-3.5 h-3.5" />
+                <span className="flex h-4 w-4 overflow-hidden rounded-full border border-border">
+                  {activeTheme.swatch.map((color, i) => (
+                    <span key={i} className="h-full flex-1" style={{ backgroundColor: `hsl(${color})` }} />
+                  ))}
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Theme: {activeTheme.name} — click for {getTheme(nextThemeId(props.themeId)).name}</p>
+            </TooltipContent>
         </Tooltip>
 
         {/* Voice Type */}

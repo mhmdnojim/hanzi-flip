@@ -1,4 +1,4 @@
-import { VocabularyWord } from "@/types/vocabulary";
+import { VocabularyWord, VocabularyDeck } from "@/types/vocabulary";
 
 export const sampleWords: VocabularyWord[] = [
   { id: "1", chinese: "你好", pinyin: "nǐ hǎo", english: "Hello" },
@@ -23,9 +23,10 @@ export const sampleWords: VocabularyWord[] = [
   { id: "20", chinese: "水", pinyin: "shuǐ", english: "Water" },
 ];
 
-export const sampleDeck = {
+export const sampleDeck: VocabularyDeck = {
   id: "sample",
   name: "Basic Greetings & Common Words",
   words: sampleWords,
   createdAt: new Date(),
+  languages: ["zh", "zh-pinyin", "en"],
 };
