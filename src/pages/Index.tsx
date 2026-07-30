@@ -503,6 +503,13 @@ const Index = () => {
         open={showWordList}
         onClose={() => setShowWordList(false)}
       />
+
+      <ColumnMappingDialog
+        preview={previewQueue[0] ?? null}
+        remaining={Math.max(previewQueue.length - 1, 0)}
+        onConfirm={handleConfirmMapping}
+        onCancel={() => setPreviewQueue((prev) => prev.slice(1))}
+      />
     </div>
   );
 };
