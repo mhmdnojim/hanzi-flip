@@ -7,6 +7,7 @@ import {
   Quote, MessageSquareText, MessageSquareOff,
   Pause, Play, ArrowUp, ArrowDown, Trash2, Settings2, List,
   Save, Sparkles, Loader2, ChevronDown,
+  EyeOff,
 } from "lucide-react";
 import {
   VocabularyWord, AutoplayMode,
@@ -86,6 +87,8 @@ interface FlashcardViewProps {
   onRenameActivePreset: (newName: string) => void;
   onDeleteActivePreset: () => void;
   onOpenWordList: () => void;
+  /** Hide (exclude) the current word from the deck and advance */
+  onHideWord?: () => void;
   onGenerateExamples: () => void;
   isGeneratingExamples: boolean;
   /** Persist an inline edit of the current word (translation / example translation) */
@@ -116,6 +119,7 @@ export function FlashcardView(props: FlashcardViewProps) {
     onSelectPreset, onSaveAsPreset, onUpdateActivePreset,
     onRenameActivePreset, onDeleteActivePreset,
     onOpenWordList, onGenerateExamples, isGeneratingExamples,
+    onHideWord,
     onEditWord,
   } = props;
 
@@ -405,6 +409,17 @@ export function FlashcardView(props: FlashcardViewProps) {
               </TooltipTrigger>
               <TooltipContent><p>{word.favorite ? "Remove from favorites" : "Add to favorites"}</p></TooltipContent>
             </Tooltip>
+            {onHideWord && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={(e) => { e.stopPropagation(); onHideWord(); }}
+                    className="p-1.5 sm:p-2 rounded-full bg-white/20 text-white/60 hover:text-white hover:bg-white/30 transition-colors">
+                    <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent><p>Hide this word from the deck</p></TooltipContent>
+              </Tooltip>
+            )}
           </div>
 
           {/* Navigation Zones */}

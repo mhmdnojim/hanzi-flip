@@ -489,6 +489,18 @@ const Index = () => {
             onRenameActivePreset={handleRenameActivePreset}
             onDeleteActivePreset={handleDeleteActivePreset}
             onOpenWordList={() => setShowWordList(true)}
+            onHideWord={() => {
+              const id = activeWord.id;
+              const remaining = wordsWithExamples.length - 1;
+              setExcludedIds((prev) => new Set(prev).add(id));
+              setIsFlipped(false);
+              if (remaining <= 0) {
+                studySession.goToIndex(0);
+              } else if (studySession.currentIndex >= remaining) {
+                studySession.goToIndex(0);
+              }
+              toast({ title: "Word hidden", description: "Restore it from the word list." });
+            }}
             onGenerateExamples={handleGenerateExamples}
             isGeneratingExamples={isGeneratingExamples}
             onEditWord={(patch) => {
