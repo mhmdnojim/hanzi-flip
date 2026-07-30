@@ -88,6 +88,8 @@ interface FlashcardViewProps {
   onOpenWordList: () => void;
   onGenerateExamples: () => void;
   isGeneratingExamples: boolean;
+  /** Persist an inline edit of the current word (translation / example translation) */
+  onEditWord?: (patch: Partial<VocabularyWord>) => void;
 }
 
 export function FlashcardView(props: FlashcardViewProps) {
@@ -114,6 +116,7 @@ export function FlashcardView(props: FlashcardViewProps) {
     onSelectPreset, onSaveAsPreset, onUpdateActivePreset,
     onRenameActivePreset, onDeleteActivePreset,
     onOpenWordList, onGenerateExamples, isGeneratingExamples,
+    onEditWord,
   } = props;
 
   const [hoveredZone, setHoveredZone] = useState<"left" | "right" | null>(null);
@@ -125,6 +128,39 @@ export function FlashcardView(props: FlashcardViewProps) {
   const [renameDraft, setRenameDraft] = useState("");
   const [presetSaveName, setPresetSaveName] = useState("");
   const [pausedMode, setPausedMode] = useState<AutoplayMode | null>(null);
+  const [editingField, setEditingField] = useState<"english" | "exampleTranslation" | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const suppressClickRef = useRef(false);
+
+  const startEdit = (field: "english" | "exampleTranslation", value: string) => {
+    if (!onEditWord) return;
+    setEditingField(field);
+    setEditDraft(value);
+  };
+  const commitEdit = () => {
+    if (editingField && onEditWord) onEditWord({ [editingField]: editDraft } as Partial<VocabularyWord>);
+    setEditingField(null);
+  };
+
+  // Swipe: left = next, right = previous (guarded so it doesn't also flip)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      suppressClickRef.current = true;
+      setTimeout(() => { suppressClickRef.current = false; }, 400);
+      if (dx < 0) onNext(); else onPrevious();
+    }
+  };
 
   useEffect(() => {
     if (autoplayMode !== "off") setPausedMode(null);
@@ -156,6 +192,7 @@ export function FlashcardView(props: FlashcardViewProps) {
   };
 
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (suppressClickRef.current || editingField) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = (e.clientX - rect.left) / rect.width;
     if (pct < 0.1) onPrevious();
@@ -259,6 +296,8 @@ export function FlashcardView(props: FlashcardViewProps) {
         <motion.div
           className="relative w-full flex-1 min-h-[65vh] sm:min-h-[75vh] cursor-pointer rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl"
           onClick={handleCardClick}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoveredZone(null)}
           style={{
@@ -452,10 +491,71 @@ export function FlashcardView(props: FlashcardViewProps) {
                 </>
               ) : (
                 <>
-                  <p className="font-body text-white font-bold leading-tight px-4"
-                    style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}>
-                    {word.english}
-                  </p>
+                  {editingField === "english" ? (
+                    <input
+                      autoFocus
+                      value={editDraft}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      onBlur={commitEdit}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") commitEdit();
+                        if (e.key === "Escape") setEditingField(null);
+                      }}
+                      className="font-body font-bold leading-tight px-4 text-center bg-white/15 rounded-xl border border-white/30 outline-none text-white w-full"
+                      style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
+                    />
+                  ) : (
+                    <p
+                      className="font-body text-white font-bold leading-tight px-4"
+                      style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
+                      onDoubleClick={(e) => { e.stopPropagation(); startEdit("english", word.english); }}
+                      title={onEditWord ? "Double-click to edit" : undefined}
+                    >
+                      {word.english}
+                    </p>
+                  )}
+                  {word.explanation && (
+                    <p className="text-xs sm:text-sm text-white/70 max-w-md text-center">{word.explanation}</p>
+                  )}
+                  {(word.exampleTranslation || editingField === "exampleTranslation") && (
+                    <div
+                      className="mt-3 max-w-[90%] sm:max-w-[80%] bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2 border border-white/20 text-left"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="text-[10px] uppercase tracking-wider text-white/60">Example</span>
+                      {editingField === "exampleTranslation" ? (
+                        <input
+                          autoFocus
+                          value={editDraft}
+                          onChange={(e) => setEditDraft(e.target.value)}
+                          onBlur={commitEdit}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === "Enter") commitEdit();
+                            if (e.key === "Escape") setEditingField(null);
+                          }}
+                          className="w-full bg-transparent border-b border-white/40 outline-none text-sm text-white"
+                        />
+                      ) : (
+                        <p
+                          className="text-xs sm:text-sm text-white/90"
+                          onDoubleClick={() => startEdit("exampleTranslation", word.exampleTranslation || "")}
+                        >
+                          {word.exampleTranslation}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {!word.exampleTranslation && onEditWord && editingField !== "exampleTranslation" && word.exampleSentence && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); startEdit("exampleTranslation", ""); }}
+                      className="mt-2 text-[11px] text-white/60 hover:text-white underline"
+                    >
+                      Add example translation
+                    </button>
+                  )}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button onClick={(e) => { e.stopPropagation(); onSpeakEnglish(); }}
