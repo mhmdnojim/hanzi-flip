@@ -224,9 +224,14 @@ export function CompactToolbar(props: CompactToolbarProps) {
               <DropdownMenuItem
                 key={code}
                 onClick={() => props.onStudyLangChange(code)}
-                className={cn(code === props.studyLang && "bg-accent")}
+                className={cn("gap-2", code === props.studyLang && "bg-accent")}
               >
-                {getLanguage(code).name}
+                <span>{getLanguage(code).name}</span>
+                {getLanguage(code).romanizationLabel && (
+                  <span className="ml-auto text-[10px] text-muted-foreground">
+                    {getLanguage(code).romanizationLabel}
+                  </span>
+                )}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
