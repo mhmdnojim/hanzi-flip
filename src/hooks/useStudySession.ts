@@ -24,6 +24,8 @@ interface UseStudySessionProps {
   nextDelay: number;
   /** When true, autoplay/repeat will speak the example sentence after the original. */
   includeExampleInPlayback?: boolean;
+  /** When true, the "original" track speaks the example sentence instead of the word. */
+  pronounceExampleInPlayback?: boolean;
   /** User-defined custom playback sequence (used when autoplayMode === "custom") */
   customSequence?: CustomSequenceStep[];
 }
@@ -38,6 +40,7 @@ export function useStudySession({
   languageGap,
   nextDelay,
   includeExampleInPlayback = false,
+  pronounceExampleInPlayback = false,
   customSequence = [],
 }: UseStudySessionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -79,12 +82,14 @@ export function useStudySession({
   // Keep callback props stable inside async loops (avoid effect restarts)
   const getWordAtIndexRef = useRef(getWordAtIndex);
   const includeExampleRef = useRef(includeExampleInPlayback);
+  const pronounceExampleRef = useRef(pronounceExampleInPlayback);
   const customSequenceRef = useRef(customSequence);
 
   useEffect(() => {
     getWordAtIndexRef.current = getWordAtIndex;
   }, [getWordAtIndex]);
   useEffect(() => { includeExampleRef.current = includeExampleInPlayback; }, [includeExampleInPlayback]);
+  useEffect(() => { pronounceExampleRef.current = pronounceExampleInPlayback; }, [pronounceExampleInPlayback]);
   useEffect(() => { customSequenceRef.current = customSequence; }, [customSequence]);
 
   useEffect(() => {
