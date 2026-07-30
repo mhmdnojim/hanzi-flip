@@ -121,15 +121,25 @@ export function CompactToolbar(props: CompactToolbarProps) {
             </TooltipContent>
           </Tooltip>
           <DropdownMenuContent>
-            {props.decks.map((deck) => (
-              <DropdownMenuItem
-                key={deck.id}
-                onClick={() => props.onDeckChange(deck.id)}
-                className={cn(deck.id === props.currentDeckId && "bg-accent")}
-              >
-                {deck.name}
-              </DropdownMenuItem>
-            ))}
+            {props.decks.map((deck) => {
+              const langs = (deck.languages ?? [])
+                .filter((c) => !getLanguage(c).romanizationOf)
+                .map((c) => getLanguage(c).short);
+              return (
+                <DropdownMenuItem
+                  key={deck.id}
+                  onClick={() => props.onDeckChange(deck.id)}
+                  className={cn("gap-2", deck.id === props.currentDeckId && "bg-accent")}
+                >
+                  <span className="truncate">{deck.name}</span>
+                  {langs.length > 0 && (
+                    <span className="ml-auto text-[10px] text-muted-foreground shrink-0">
+                      {langs.join(" · ")}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+              );
+            })}
           </DropdownMenuContent>
         </DropdownMenu>
 
