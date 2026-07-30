@@ -2,8 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import { VocabularyWord, VocabularyDeck, StudyProgress, StorageMode } from "@/types/vocabulary";
 import { sampleDeck } from "@/data/sampleDeck";
 import { getLanguage, romanizationCodeFor } from "@/utils/languages";
+import { loadData, saveData, takeLegacyLocalData } from "@/lib/deckStorage";
 
-const STORAGE_KEY = "flashcard_data";
 const LANG_KEY = "flashcard_languages_v1";
 
 interface StoredData {
@@ -99,35 +99,28 @@ export function useVocabulary() {
     } catch { /* ignore */ }
   }, [studyLang, translationLang]);
 
-  // Load from localStorage on mount
+  // Load persisted decks (IndexedDB, with one-time localStorage migration)
+  const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    if (storageMode === "local") {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        try {
-          const data: StoredData = JSON.parse(stored);
-          if (data.decks.length > 0) {
-            setDecks(data.decks);
-            setCurrentDeckId(data.currentDeckId);
-          }
-        } catch (e) {
-          console.error("Failed to parse stored data:", e);
-        }
+    if (storageMode !== "local") return;
+    let cancelled = false;
+    (async () => {
+      const data =
+        takeLegacyLocalData<StoredData>() ?? (await loadData<StoredData>());
+      if (!cancelled && data?.decks?.length) {
+        setDecks(data.decks);
+        setCurrentDeckId(data.currentDeckId);
       }
-    }
+      if (!cancelled) setHydrated(true);
+    })();
+    return () => { cancelled = true; };
   }, [storageMode]);
 
-  // Save to localStorage when data changes
+  // Persist decks when they change
   useEffect(() => {
-    if (storageMode === "local") {
-      const data: StoredData = {
-        decks,
-        currentDeckId,
-        progress: {},
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-  }, [decks, currentDeckId, storageMode]);
+    if (storageMode !== "local" || !hydrated) return;
+    void saveData<StoredData>({ decks, currentDeckId, progress: {} });
+  }, [decks, currentDeckId, storageMode, hydrated]);
 
   const addDeck = useCallback((name: string, words: VocabularyWord[], languages?: string[]) => {
     const newDeck: VocabularyDeck = {
