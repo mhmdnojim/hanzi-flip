@@ -491,6 +491,15 @@ const Index = () => {
             onOpenWordList={() => setShowWordList(true)}
             onGenerateExamples={handleGenerateExamples}
             isGeneratingExamples={isGeneratingExamples}
+            onEditWord={(patch) => {
+              const source = vocabulary.words.find((w) => w.id === activeWord.id);
+              const next: typeof patch = { ...patch };
+              // Keep the multi-language map in sync when the translation is edited
+              if (patch.english !== undefined) {
+                next.values = { ...(source?.values || {}), [vocabulary.translationLang]: patch.english };
+              }
+              vocabulary.updateWord(activeWord.id, next);
+            }}
           />
         </div>
 

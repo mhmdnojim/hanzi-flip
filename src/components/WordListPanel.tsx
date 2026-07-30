@@ -4,6 +4,43 @@ import { X, Search, CheckSquare, Square, Star } from "lucide-react";
 import { VocabularyWord } from "@/types/vocabulary";
 import { cn } from "@/lib/utils";
 
+type Category = "regular" | "idiom" | "phrasal" | "collocation";
+type LengthBucket = "single" | "multi";
+type StatusBucket = "favorite" | "correct" | "incorrect" | "new";
+type ExampleBucket = "with" | "without";
+
+const ALL_CATEGORIES: readonly Category[] = ["regular", "idiom", "phrasal", "collocation"];
+const ALL_LENGTHS: readonly LengthBucket[] = ["single", "multi"];
+const ALL_STATUSES: readonly StatusBucket[] = ["new", "favorite", "correct", "incorrect"];
+const ALL_EXAMPLES: readonly ExampleBucket[] = ["with", "without"];
+
+const CATEGORY_NAMES: Record<Category, string> = {
+  regular: "Regular", idiom: "Idiom", phrasal: "Phrasal verb", collocation: "Collocation",
+};
+const LENGTH_NAMES: Record<LengthBucket, string> = { single: "Single", multi: "Multi" };
+const STATUS_NAMES: Record<StatusBucket, string> = {
+  new: "New", favorite: "Favorite", correct: "Correct", incorrect: "Incorrect",
+};
+const EXAMPLE_NAMES: Record<ExampleBucket, string> = { with: "Has example", without: "No example" };
+
+function categoryOf(w: VocabularyWord): Category {
+  if (w.isIdiom) return "idiom";
+  if (w.isPhrasalVerb) return "phrasal";
+  if (w.isCollocation) return "collocation";
+  return "regular";
+}
+function lengthOf(w: VocabularyWord): LengthBucket {
+  const text = (w.chinese || "").trim();
+  const units = /[\u4e00-\u9fff]/.test(text) ? text.replace(/\s/g, "").length : text.split(/\s+/).filter(Boolean).length;
+  return units <= 1 ? "single" : "multi";
+}
+function statusOf(w: VocabularyWord): StatusBucket {
+  if (w.favorite) return "favorite";
+  if ((w.correctCount || 0) > 0) return "correct";
+  if ((w.incorrectCount || 0) > 0) return "incorrect";
+  return "new";
+}
+
 interface WordListPanelProps {
   words: VocabularyWord[];
   excludedIds: Set<string>;
@@ -18,16 +55,25 @@ export function WordListPanel({
   words, excludedIds, onExcludedChange, currentWordId, onJumpTo, open, onClose,
 }: WordListPanelProps) {
   const [query, setQuery] = useState("");
+  const [categories, setCategories] = useState<Set<Category>>(new Set(ALL_CATEGORIES));
+  const [lengths, setLengths] = useState<Set<LengthBucket>>(new Set(ALL_LENGTHS));
+  const [statuses, setStatuses] = useState<Set<StatusBucket>>(new Set(ALL_STATUSES));
+  const [examples, setExamples] = useState<Set<ExampleBucket>>(new Set(ALL_EXAMPLES));
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return words;
-    return words.filter((w) =>
-      w.chinese.toLowerCase().includes(q) ||
-      w.english.toLowerCase().includes(q) ||
-      (w.pinyin || "").toLowerCase().includes(q)
-    );
-  }, [words, query]);
+    return words.filter((w) => {
+      if (q &&
+        !w.chinese.toLowerCase().includes(q) &&
+        !w.english.toLowerCase().includes(q) &&
+        !(w.pinyin || "").toLowerCase().includes(q)) return false;
+      if (!categories.has(categoryOf(w))) return false;
+      if (!lengths.has(lengthOf(w))) return false;
+      if (!statuses.has(statusOf(w))) return false;
+      if (!examples.has(w.exampleSentence ? "with" : "without")) return false;
+      return true;
+    });
+  }, [words, query, categories, lengths, statuses, examples]);
 
   const toggleOne = (id: string) => {
     const next = new Set(excludedIds);
@@ -44,6 +90,13 @@ export function WordListPanel({
   };
 
   const activeCount = words.length - excludedIds.size;
+
+  const filterRows = [
+    { label: "Category", options: ALL_CATEGORIES, selected: categories, set: setCategories as (v: Set<string>) => void, names: CATEGORY_NAMES as Record<string, string> },
+    { label: "Word", options: ALL_LENGTHS, selected: lengths, set: setLengths as (v: Set<string>) => void, names: LENGTH_NAMES as Record<string, string> },
+    { label: "Status", options: ALL_STATUSES, selected: statuses, set: setStatuses as (v: Set<string>) => void, names: STATUS_NAMES as Record<string, string> },
+    { label: "Example", options: ALL_EXAMPLES, selected: examples, set: setExamples as (v: Set<string>) => void, names: EXAMPLE_NAMES as Record<string, string> },
+  ];
 
   return (
     <AnimatePresence>
@@ -87,6 +140,39 @@ export function WordListPanel({
                   Include only filtered
                 </button>
               </div>
+
+              {filterRows.map((row) => {
+                const allOn = row.options.every((o) => row.selected.has(o as never));
+                return (
+                  <div key={row.label} className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      onClick={() => row.set(new Set(allOn ? [] : (row.options as readonly string[])))}
+                      className="text-[10px] uppercase tracking-wide text-muted-foreground w-14 text-left hover:text-foreground"
+                    >
+                      {row.label}
+                    </button>
+                    {(row.options as readonly string[]).map((opt) => {
+                      const on = row.selected.has(opt as never);
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => {
+                            const next = new Set(row.selected as Set<string>);
+                            if (next.has(opt)) next.delete(opt); else next.add(opt);
+                            row.set(next);
+                          }}
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-[11px] border transition-colors",
+                            on ? "bg-primary/15 border-primary/40 text-primary" : "bg-muted border-transparent text-muted-foreground"
+                          )}
+                        >
+                          {row.names[opt]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="flex-1 overflow-y-auto">
