@@ -193,20 +193,21 @@ export function CompactToolbar(props: CompactToolbarProps) {
           </AlertDialog>
         )}
 
-        {/* Study language */}
+        {/* Front (practice) language */}
         <DropdownMenu>
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
                 <Button variant="secondary" size="sm" className="h-8 sm:h-9 px-2 sm:px-3 gap-1 text-xs sm:text-sm rounded-full">
                   <Languages className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline text-[10px] uppercase opacity-70">Front</span>
                   {studyLanguage.short}
                   <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Language you practise: {studyLanguage.name}</p>
+              <p>Front of card (language you practise): {studyLanguage.name}</p>
             </TooltipContent>
           </Tooltip>
           <DropdownMenuContent>
@@ -233,19 +234,18 @@ export function CompactToolbar(props: CompactToolbarProps) {
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 sm:h-9 px-2 sm:px-3 gap-1 text-xs sm:text-sm rounded-full">
+                  <span className="hidden sm:inline text-[10px] uppercase opacity-70">Back</span>
                   → {translationLanguage.short}
                   <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Translation shown: {translationLanguage.name}</p>
+              <p>Back of card (translation shown after flip): {translationLanguage.name}</p>
             </TooltipContent>
           </Tooltip>
           <DropdownMenuContent>
-            {props.availableLanguages
-              .filter((code) => code !== props.studyLang)
-              .map((code) => (
+            {props.availableLanguages.map((code) => (
                 <DropdownMenuItem
                   key={code}
                   onClick={() => props.onTranslationLangChange(code)}
