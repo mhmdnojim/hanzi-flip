@@ -7,7 +7,8 @@ import { useVocabulary } from "@/hooks/useVocabulary";
 import { useAudio } from "@/hooks/useAudio";
 import { useStudySession } from "@/hooks/useStudySession";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { parseExcelFile } from "@/utils/excelParser";
+import { previewExcelFile, buildWordsFromMapping, type SheetPreview } from "@/utils/excelParser";
+import { ColumnMappingDialog } from "@/components/ColumnMappingDialog";
 import { useToast } from "@/hooks/use-toast";
 import { CustomSequenceStep } from "@/types/vocabulary";
 import {
@@ -253,38 +254,47 @@ const Index = () => {
     toast({ title: "Deck shuffled!", duration: 1500 });
   }, [vocabulary, studySession, toast]);
 
+  // ── Import: preview each file, let the user confirm the column mapping ──
+  const [previewQueue, setPreviewQueue] = useState<SheetPreview[]>([]);
+
   const handleImport = useCallback(
     async (files: File[]) => {
-      let imported = 0;
-      let totalWords = 0;
+      const previews: SheetPreview[] = [];
       const failed: string[] = [];
-
       for (const file of files) {
-        const result = await parseExcelFile(file);
-        if (result.success) {
-          vocabulary.addDeck(result.filename || file.name, result.words, result.languages);
-          imported += 1;
-          totalWords += result.words.length;
-        } else {
-          failed.push(`${file.name}: ${result.error}`);
-        }
-      }
-
-      if (imported > 0) {
-        toast({
-          title: "Import successful!",
-          description: `${imported} file${imported > 1 ? "s" : ""} · ${totalWords} words`,
-        });
+        const preview = await previewExcelFile(file);
+        if (preview.success) previews.push(preview);
+        else failed.push(`${file.name}: ${preview.error}`);
       }
       if (failed.length) {
         toast({
-          title: `Import failed for ${failed.length} file${failed.length > 1 ? "s" : ""}`,
+          title: `Couldn't read ${failed.length} file${failed.length > 1 ? "s" : ""}`,
           description: failed.join(" | "),
           variant: "destructive",
         });
       }
+      if (previews.length) setPreviewQueue((prev) => [...prev, ...previews]);
     },
-    [vocabulary, toast]
+    [toast]
+  );
+
+  const handleConfirmMapping = useCallback(
+    (mapping: Record<string, string | null>) => {
+      const preview = previewQueue[0];
+      if (!preview) return;
+      const result = buildWordsFromMapping(preview, mapping);
+      if (result.success) {
+        vocabulary.addDeck(result.filename || preview.filename, result.words, result.languages);
+        toast({
+          title: `Imported “${preview.filename}”`,
+          description: `${result.words.length} words`,
+        });
+        setPreviewQueue((prev) => prev.slice(1));
+      } else {
+        toast({ title: "Import failed", description: result.error, variant: "destructive" });
+      }
+    },
+    [previewQueue, vocabulary, toast]
   );
 
   // Keyboard shortcuts
@@ -367,6 +377,12 @@ const Index = () => {
             ? "No vocabulary loaded"
             : "All words excluded — open the word list to include some."}
         </p>
+        <ColumnMappingDialog
+          preview={previewQueue[0] ?? null}
+          remaining={Math.max(previewQueue.length - 1, 0)}
+          onConfirm={handleConfirmMapping}
+          onCancel={() => setPreviewQueue((prev) => prev.slice(1))}
+        />
       </div>
     );
   }
@@ -492,6 +508,13 @@ const Index = () => {
         onJumpTo={handleJumpTo}
         open={showWordList}
         onClose={() => setShowWordList(false)}
+      />
+
+      <ColumnMappingDialog
+        preview={previewQueue[0] ?? null}
+        remaining={Math.max(previewQueue.length - 1, 0)}
+        onConfirm={handleConfirmMapping}
+        onCancel={() => setPreviewQueue((prev) => prev.slice(1))}
       />
     </div>
   );
