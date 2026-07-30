@@ -1,13 +1,21 @@
 import { useState, useCallback, useEffect } from "react";
 import { VocabularyWord, VocabularyDeck, StudyProgress, StorageMode } from "@/types/vocabulary";
 import { sampleDeck } from "@/data/sampleDeck";
+import { getLanguage, romanizationCodeFor } from "@/utils/languages";
 
 const STORAGE_KEY = "flashcard_data";
+const LANG_KEY = "flashcard_languages_v1";
 
 interface StoredData {
   decks: VocabularyDeck[];
   currentDeckId: string;
   progress: Record<string, StudyProgress>;
+}
+
+/** Values map for a word, falling back to the legacy chinese/pinyin/english fields */
+function wordValues(word: VocabularyWord): Record<string, string> {
+  if (word.values && Object.keys(word.values).length) return word.values;
+  return { zh: word.chinese, "zh-pinyin": word.pinyin, en: word.english };
 }
 
 export function useVocabulary() {
@@ -16,11 +24,62 @@ export function useVocabulary() {
   const [storageMode, setStorageMode] = useState<StorageMode>("local");
   const [isShuffled, setIsShuffled] = useState(false);
   const [shuffledOrder, setShuffledOrder] = useState<number[]>([]);
+  const [studyLang, setStudyLang] = useState<string>("zh");
+  const [translationLang, setTranslationLang] = useState<string>("en");
 
   const currentDeck = decks.find((d) => d.id === currentDeckId) || sampleDeck;
+
+  // Languages available in the current deck
+  const deckLanguages: string[] =
+    currentDeck.languages && currentDeck.languages.length
+      ? currentDeck.languages
+      : ["zh", "zh-pinyin", "en"];
+  const availableLanguages = deckLanguages.filter((c) => !getLanguage(c).romanizationOf);
+
+  const activeStudyLang = availableLanguages.includes(studyLang)
+    ? studyLang
+    : availableLanguages.includes("zh")
+      ? "zh"
+      : availableLanguages[0] || "zh";
+  const activeTranslationLang =
+    availableLanguages.includes(translationLang) && translationLang !== activeStudyLang
+      ? translationLang
+      : availableLanguages.find((c) => c !== activeStudyLang) || activeStudyLang;
+
+  const transcriptionLang = romanizationCodeFor(activeStudyLang);
+
+  // Project every word onto the selected study / translation languages
+  const projectedWords: VocabularyWord[] = currentDeck.words.map((w) => {
+    const values = wordValues(w);
+    return {
+      ...w,
+      chinese: values[activeStudyLang] ?? "",
+      pinyin: (transcriptionLang && values[transcriptionLang]) || "",
+      english: values[activeTranslationLang] ?? "",
+    };
+  });
+
   const words = isShuffled
-    ? shuffledOrder.map((i) => currentDeck.words[i])
-    : currentDeck.words;
+    ? shuffledOrder.map((i) => projectedWords[i]).filter(Boolean)
+    : projectedWords;
+
+  // Persist the language selection
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LANG_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.studyLang) setStudyLang(parsed.studyLang);
+        if (parsed?.translationLang) setTranslationLang(parsed.translationLang);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LANG_KEY, JSON.stringify({ studyLang, translationLang }));
+    } catch { /* ignore */ }
+  }, [studyLang, translationLang]);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -52,15 +111,29 @@ export function useVocabulary() {
     }
   }, [decks, currentDeckId, storageMode]);
 
-  const addDeck = useCallback((name: string, words: VocabularyWord[]) => {
+  const addDeck = useCallback((name: string, words: VocabularyWord[], languages?: string[]) => {
     const newDeck: VocabularyDeck = {
       id: `deck_${Date.now()}`,
       name,
       words: words.map((w, i) => ({ ...w, id: `${Date.now()}_${i}` })),
       createdAt: new Date(),
+      languages,
     };
     setDecks((prev) => [...prev, newDeck]);
     setCurrentDeckId(newDeck.id);
+  }, []);
+
+  const deleteDeck = useCallback((deckId: string) => {
+    setDecks((prev) => {
+      const next = prev.filter((d) => d.id !== deckId);
+      const remaining = next.length ? next : [sampleDeck];
+      setCurrentDeckId((current) =>
+        current === deckId ? remaining[0].id : current
+      );
+      return remaining;
+    });
+    setIsShuffled(false);
+    setShuffledOrder([]);
   }, []);
 
   const updateWord = useCallback(
@@ -202,9 +275,15 @@ export function useVocabulary() {
     words,
     isShuffled,
     storageMode,
+    availableLanguages,
+    studyLang: activeStudyLang,
+    translationLang: activeTranslationLang,
+    setStudyLang,
+    setTranslationLang,
     setStorageMode,
     setCurrentDeckId,
     addDeck,
+    deleteDeck,
     updateWord,
     toggleFavorite,
     markCorrect,
