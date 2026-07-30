@@ -410,8 +410,10 @@ export function useStudySession({
 
         if (playbackRunIdRef.current !== runId) break;
 
-        // Wait before next word
-        await wait(nextDelayRef.current * 1000);
+        // Wait before next word (custom sequences use the step gap for smooth transitions)
+        const interWordDelay =
+          autoplayMode === "custom" ? languageGapRef.current * 1000 : nextDelayRef.current * 1000;
+        await wait(interWordDelay);
         if (playbackRunIdRef.current !== runId) break;
 
         // Move to next word (unless we're in infinite repeat mode)
@@ -421,7 +423,9 @@ export function useStudySession({
         }
 
         // Reset display for next word based on mode
-        if (autoplayMode === "chinese" || autoplayMode === "chinese-to-english") {
+        if (autoplayMode === "custom") {
+          setDisplayMode("both");
+        } else if (autoplayMode === "chinese" || autoplayMode === "chinese-to-english") {
           setDisplayMode("chinese");
         } else {
           setDisplayMode("english");
