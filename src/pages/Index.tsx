@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { FlashcardView } from "@/components/FlashcardView";
 import { CompactToolbar } from "@/components/CompactToolbar";
@@ -17,6 +17,7 @@ import {
   genPresetId, sequenceSignature, type SequencePreset,
 } from "@/lib/sequencePresets";
 import { detectLanguageNameFromText } from "@/lib/detectLanguage";
+import { setDeckFileHandle, saveDeckToExcel } from "@/lib/excelSync";
 import { getLanguage } from "@/utils/languages";
 import {
   applyTheme, loadThemeId, saveThemeId,
