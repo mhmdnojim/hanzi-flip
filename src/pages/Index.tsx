@@ -548,6 +548,8 @@ const Index = () => {
                 next.values = { ...(source?.values || {}), ...(next.values || {}), [vocabulary.studyLang]: patch.chinese };
               }
               vocabulary.updateWord(activeWord.id, next);
+              // Persist the edit back into the source .xlsx (debounced)
+              setEditStamp(Date.now());
             }}
           />
         </div>
