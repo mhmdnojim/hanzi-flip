@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { sequenceSignature, type SequencePreset } from "@/lib/sequencePresets";
+import { LANGUAGES } from "@/utils/languages";
 
 interface FlashcardViewProps {
   word: VocabularyWord;
