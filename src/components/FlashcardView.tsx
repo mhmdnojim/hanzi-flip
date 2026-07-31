@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { sequenceSignature, type SequencePreset } from "@/lib/sequencePresets";
 import { LANGUAGES } from "@/utils/languages";
+import { splitMeanings, joinMeanings, useMeaningSelection } from "@/lib/meanings";
+import MeaningsPanel from "@/components/MeaningsPanel";
 
 interface FlashcardViewProps {
   word: VocabularyWord;
@@ -135,7 +137,10 @@ export function FlashcardView(props: FlashcardViewProps) {
   const [pausedMode, setPausedMode] = useState<AutoplayMode | null>(null);
   const [editingField, setEditingField] = useState<"english" | "chinese" | "exampleTranslation" | null>(null);
   const [editDraft, setEditDraft] = useState("");
-  const [showMeanings, setShowMeanings] = useState(false);
+  const [meaningsSide, setMeaningsSide] = useState<"front" | "back" | null>(null);
+  const [meaningsAnchor, setMeaningsAnchor] = useState<DOMRect | null>(null);
+  const frontWordRef = useRef<HTMLParagraphElement>(null);
+  const backWordRef = useRef<HTMLParagraphElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const suppressClickRef = useRef(false);
 
@@ -149,28 +154,27 @@ export function FlashcardView(props: FlashcardViewProps) {
     setEditingField(null);
   };
 
-  // ---- Multiple meanings (comma-separated chunks of the translation) ----
-  const meaningChunks = (word.english || "")
-    .split(",")
-    .map((m) => m.trim())
-    .filter(Boolean);
-  const hasMultipleMeanings = meaningChunks.length > 1;
-  const hiddenMeanings = word.hiddenMeanings || [];
-  const visibleMeanings = meaningChunks.filter((m) => !hiddenMeanings.includes(m));
-  const displayedTranslation = hasMultipleMeanings
-    ? (visibleMeanings.length > 0 ? visibleMeanings.join(", ") : word.english)
-    : word.english;
-  const toggleMeaning = (m: string) => {
-    if (!onEditWord) return;
-    const next = hiddenMeanings.includes(m)
-      ? hiddenMeanings.filter((x) => x !== m)
-      : [...hiddenMeanings, m];
-    // never allow hiding every meaning
-    if (next.length >= meaningChunks.length) return;
-    onEditWord({ hiddenMeanings: next } as Partial<VocabularyWord>);
-  };
+  // ---- Multiple meanings — shared for BOTH sides / any language ----
+  const frontMeanings = splitMeanings(word.chinese || "");
+  const backMeanings = splitMeanings(word.english || "");
+  const hasMultipleFront = frontMeanings.length > 1;
+  const hasMultipleBack = backMeanings.length > 1;
+  const frontSel = useMeaningSelection(word.id, originalLabel, frontMeanings);
+  const backSel = useMeaningSelection(word.id, translationLabel, backMeanings);
+  const displayedFront = hasMultipleFront ? joinMeanings(frontSel.selected) : word.chinese;
+  const displayedTranslation = hasMultipleBack ? joinMeanings(backSel.selected) : word.english;
+  const isRtl = (label: string) =>
+    !!LANGUAGES.find((l) => l.name === label || l.native === label || l.short === label)?.rtl;
 
-  useEffect(() => { setShowMeanings(false); }, [word.id]);
+  const openMeanings = (side: "front" | "back") => {
+    const el = side === "front" ? frontWordRef.current : backWordRef.current;
+    if (!el) return;
+    setMeaningsAnchor(el.getBoundingClientRect());
+    setMeaningsSide(side);
+  };
+  const closeMeanings = () => { setMeaningsSide(null); setMeaningsAnchor(null); };
+
+  useEffect(() => { closeMeanings(); }, [word.id]);
 
   // Swipe: left = next, right = previous (guarded so it doesn't also flip)
   const handleTouchStart = (e: React.TouchEvent) => {
