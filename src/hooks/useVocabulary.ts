@@ -122,16 +122,23 @@ export function useVocabulary() {
     void saveData<StoredData>({ decks, currentDeckId, progress: {} });
   }, [decks, currentDeckId, storageMode, hydrated]);
 
-  const addDeck = useCallback((name: string, words: VocabularyWord[], languages?: string[]) => {
+  const addDeck = useCallback((
+    name: string,
+    words: VocabularyWord[],
+    languages?: string[],
+    columns?: VocabularyDeck["columns"],
+  ) => {
     const newDeck: VocabularyDeck = {
       id: `deck_${Date.now()}`,
       name,
       words: words.map((w, i) => ({ ...w, id: `${Date.now()}_${i}` })),
       createdAt: new Date(),
       languages,
+      columns,
     };
     setDecks((prev) => [...prev, newDeck]);
     setCurrentDeckId(newDeck.id);
+    return newDeck.id;
   }, []);
 
   const deleteDeck = useCallback((deckId: string) => {
