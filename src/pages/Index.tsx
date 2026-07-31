@@ -1,3 +1,4 @@
+import { getSelectedText } from "@/lib/meanings";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { FlashcardView } from "@/components/FlashcardView";
@@ -163,9 +164,16 @@ const Index = () => {
       (index: number) => {
         const w = wordsWithExamples[index];
         if (!w) return null;
-        return { chinese: w.chinese, english: w.english, example: w.exampleSentence };
+        // Speak only the meanings the user kept checked (matches what's displayed)
+        const frontLang = getLanguage(vocabulary.studyLang).name;
+        const backLang = getLanguage(vocabulary.translationLang).name;
+        return {
+          chinese: getSelectedText(w.id, frontLang, w.chinese),
+          english: getSelectedText(w.id, backLang, w.english),
+          example: w.exampleSentence,
+        };
       },
-      [wordsWithExamples]
+      [wordsWithExamples, vocabulary.studyLang, vocabulary.translationLang]
     ),
     isFlipped,
     languageGap,
@@ -191,11 +199,11 @@ const Index = () => {
     if (!word || audio.voiceMuted) return;
     const showingChinese = showChineseFirst ? !flipped : flipped;
     if (showingChinese) {
-      audio.speakChinese(word.chinese);
+      audio.speakChinese(getSelectedText(word.id, getLanguage(vocabulary.studyLang).name, word.chinese));
     } else {
-      audio.speakEnglish(word.english);
+      audio.speakEnglish(getSelectedText(word.id, getLanguage(vocabulary.translationLang).name, word.english));
     }
-  }, [audio, showChineseFirst]);
+  }, [audio, showChineseFirst, vocabulary.studyLang, vocabulary.translationLang]);
 
   // Pronounce on initial load or when vocabulary changes
   useEffect(() => {
@@ -485,8 +493,8 @@ const Index = () => {
             showChineseFirst={showChineseFirst}
             fontSize={fontSize}
             onFontSizeChange={setFontSize}
-            onSpeakChinese={() => audio.speakChinese(activeWord.chinese)}
-            onSpeakEnglish={() => audio.speakEnglish(activeWord.english)}
+            onSpeakChinese={() => audio.speakChinese(getSelectedText(activeWord.id, originalLabel, activeWord.chinese))}
+            onSpeakEnglish={() => audio.speakEnglish(getSelectedText(activeWord.id, translationLabel, activeWord.english))}
             autoplayMode={studySession.autoplayMode}
             onAutoplayModeChange={studySession.setAutoplayMode}
             isAutoplayActive={studySession.isAutoplayActive}

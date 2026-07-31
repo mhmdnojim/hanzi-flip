@@ -49,6 +49,15 @@ export function selectionKey(vocabId: string, lang: string): string {
   return `${vocabId}|${lang}`;
 }
 
+/** Text that is actually displayed (and should be spoken) for a card side */
+export function getSelectedText(vocabId: string, lang: string, value: string): string {
+  if (!value) return value;
+  const parts = splitMeanings(value);
+  if (parts.length <= 1) return value;
+  const saved = (store[selectionKey(vocabId, lang)] ?? []).filter((m) => parts.includes(m));
+  return joinMeanings(saved.length ? saved : parts.slice(0, 1));
+}
+
 export function setMeaningSelection(vocabId: string, lang: string, meanings: string[]) {
   store = { ...store, [selectionKey(vocabId, lang)]: meanings };
   try {
