@@ -199,11 +199,11 @@ const Index = () => {
     if (!word || audio.voiceMuted) return;
     const showingChinese = showChineseFirst ? !flipped : flipped;
     if (showingChinese) {
-      audio.speakChinese(word.chinese);
+      audio.speakChinese(getSelectedText(word.id, getLanguage(vocabulary.studyLang).name, word.chinese));
     } else {
-      audio.speakEnglish(word.english);
+      audio.speakEnglish(getSelectedText(word.id, getLanguage(vocabulary.translationLang).name, word.english));
     }
-  }, [audio, showChineseFirst]);
+  }, [audio, showChineseFirst, vocabulary.studyLang, vocabulary.translationLang]);
 
   // Pronounce on initial load or when vocabulary changes
   useEffect(() => {
