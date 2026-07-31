@@ -1,3 +1,4 @@
+import { getSelectedText } from "@/lib/meanings";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { FlashcardView } from "@/components/FlashcardView";
