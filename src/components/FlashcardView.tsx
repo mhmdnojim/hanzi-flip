@@ -1175,6 +1175,17 @@ export function FlashcardView(props: FlashcardViewProps) {
           </div>
         </div>
       </div>
+      {meaningsSide && meaningsAnchor && (
+        <MeaningsPanel
+          title={`${meaningsSide === "front" ? originalLabel : translationLabel} — ${(meaningsSide === "front" ? frontMeanings : backMeanings).length} meanings`}
+          meanings={meaningsSide === "front" ? frontMeanings : backMeanings}
+          selected={meaningsSide === "front" ? frontSel.selected : backSel.selected}
+          rtl={isRtl(meaningsSide === "front" ? originalLabel : translationLabel)}
+          anchor={meaningsAnchor}
+          onChange={meaningsSide === "front" ? frontSel.setSelected : backSel.setSelected}
+          onClose={closeMeanings}
+        />
+      )}
     </TooltipProvider>
   );
 }
