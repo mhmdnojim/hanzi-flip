@@ -35,6 +35,15 @@ const REVERSE_SHEET = "reverse index";
 
 const norm = (v: unknown) => String(v ?? "").trim();
 
+/** Sense cells use "|" to separate the meanings that stayed together. */
+const cleanSense = (v: unknown) =>
+  norm(v)
+    .replace(/^[|;,\s]+|[|;,\s]+$/g, "")
+    .split(/\s*\|\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .join(", ");
+
 function findSheet(book: XLSX.WorkBook, name: string): string | undefined {
   return book.SheetNames.find((s) => s.trim().toLowerCase() === name);
 }
@@ -147,7 +156,7 @@ export async function parseSenseWorkbook(file: File): Promise<SenseImportResult>
       const senseId = norm(sense["Sense ID"]);
       const chinese = norm(sense["Chinese"]);
       const pinyin = norm(sense["Pinyin"]);
-      const english = norm(sense["English Sense"]).replace(/^\|\s*/, "").trim();
+      const english = cleanSense(sense["English Sense"]);
       if (!chinese && !english) continue;
 
       const values: Record<string, string> = {};
@@ -171,20 +180,25 @@ export async function parseSenseWorkbook(file: File): Promise<SenseImportResult>
         const { code, latin } = codesForLanguage(e.language);
         if (!code) continue;
         const bucket = perLanguage.get(code) ?? { entries: [], latins: [] };
-        if (!bucket.entries.includes(e.entry)) {
-          bucket.entries.push(e.entry);
-          bucket.latins.push(e.latin);
+        const entry = cleanSense(e.entry);
+        if (entry && !bucket.entries.includes(entry)) {
+          bucket.entries.push(entry);
+          bucket.latins.push(cleanSense(e.latin));
         }
         perLanguage.set(code, bucket);
         if (/needs review/i.test(e.mapping) || /high/i.test(e.priority)) review = true;
-        if (latin) languages.add(latin);
         languages.add(code);
       }
       for (const [code, bucket] of perLanguage) {
-        values[code] = bucket.entries.join(", ");
+        const text = bucket.entries.join(", ");
+        values[code] = text;
         const latin = romanizationCodeFor(code);
         const latinText = bucket.latins.join(", ").trim();
-        if (latin && latinText.replace(/[,\s]/g, "")) values[latin] = latinText;
+        // Latin-script languages transliterate to themselves — no second line needed.
+        if (latin && latinText.replace(/[,\s]/g, "") && latinText !== text) {
+          values[latin] = latinText;
+          languages.add(latin);
+        }
       }
 
       if (Object.keys(values).length === 0) continue;
