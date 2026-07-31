@@ -128,7 +128,6 @@ export function FlashcardView(props: FlashcardViewProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [userFlipOverride, setUserFlipOverride] = useState(false);
   const [showSequenceEditor, setShowSequenceEditor] = useState(false);
-  const seqClickStage = useRef<0 | 1 | 2>(0);
   const [renamingActive, setRenamingActive] = useState(false);
   const [renameDraft, setRenameDraft] = useState("");
   const [presetSaveName, setPresetSaveName] = useState("");
