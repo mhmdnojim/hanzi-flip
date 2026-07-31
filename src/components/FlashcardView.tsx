@@ -531,7 +531,7 @@ export function FlashcardView(props: FlashcardViewProps) {
                           animate={{ opacity: 1, y: 0 }}
                           className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
                         >
-                          {word.pinyin}
+                          {displayedPinyin}
                         </motion.p>
                       )}
                       <p ref={frontWordRef} className="font-chinese text-white font-bold leading-tight"
