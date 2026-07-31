@@ -128,7 +128,6 @@ export function FlashcardView(props: FlashcardViewProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [userFlipOverride, setUserFlipOverride] = useState(false);
   const [showSequenceEditor, setShowSequenceEditor] = useState(false);
-  const seqClickStage = useRef<0 | 1 | 2>(0);
   const [renamingActive, setRenamingActive] = useState(false);
   const [renameDraft, setRenameDraft] = useState("");
   const [presetSaveName, setPresetSaveName] = useState("");
@@ -643,6 +642,126 @@ export function FlashcardView(props: FlashcardViewProps) {
               </div>
             </div>
 
+            {/* Custom Sequence Editor — absolutely positioned so it never pushes other controls */}
+            {showSequenceEditor && (
+              <div
+                className="absolute left-3 sm:left-4 bottom-14 sm:bottom-16 p-2 sm:p-3 rounded-lg bg-black/60 backdrop-blur-md border border-white/20 w-fit max-w-[calc(100%-1.5rem)] sm:max-w-[calc(100%-2rem)] shadow-xl z-40"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <span className="text-[10px] sm:text-xs text-white/80 font-semibold whitespace-nowrap">
+                    Custom sequence (per word)
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (autoplayMode === "custom" && isAutoplayActive) onAutoplayModeChange("off");
+                        else onAutoplayModeChange("custom");
+                      }}
+                      className={cn(
+                        "px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold border transition-colors whitespace-nowrap",
+                        autoplayMode === "custom" && isAutoplayActive
+                          ? "bg-emerald-500 text-white border-emerald-300"
+                          : "bg-white/10 text-white border-white/30 hover:bg-white/20"
+                      )}
+                    >
+                      {autoplayMode === "custom" && isAutoplayActive ? "Playing — Stop" : "Play this sequence"}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setShowSequenceEditor(false); }}
+                      className="p-0.5 rounded-full text-white/60 hover:text-white hover:bg-white/20 transition-colors"
+                      title="Close"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Preset bar */}
+                <div className="mb-2 flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] sm:text-xs text-white/60 shrink-0">Preset:</span>
+                  <select
+                    value={activePresetId || ""}
+                    onChange={(e) => e.target.value && onSelectPreset(e.target.value)}
+                    className="text-[10px] sm:text-xs font-medium px-1.5 py-0.5 rounded border border-white/30 bg-white/10 text-white outline-none cursor-pointer max-w-[140px] truncate"
+                  >
+                    <option value="" className="text-black">— none —</option>
+                    {sequencePresets.map((p) => (
+                      <option key={p.id} value={p.id} className="text-black">{p.name}</option>
+                    ))}
+                  </select>
+                  {activePreset && isDirty && (
+                    <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/30 text-amber-100 border border-amber-300/40">
+                      unsaved
+                    </span>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const name = window.prompt("Save sequence as:")?.trim();
+                      if (name) onSaveAsPreset(name);
+                    }}
+                    disabled={customSequence.length === 0}
+                    className="ml-auto px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-bold bg-violet-500/50 hover:bg-violet-500/70 text-white border border-violet-300/50 disabled:opacity-40"
+                  >
+                    + Save as…
+                  </button>
+                </div>
+
+                {customSequence.length === 0 && (
+                  <p className="text-[10px] sm:text-xs text-white/60 mb-2">
+                    No steps yet. Add steps below to build your order.
+                  </p>
+                )}
+
+                <div className="flex flex-col gap-1.5 mb-2 max-h-40 overflow-y-auto pr-1">
+                  {customSequence.map((step, i) => (
+                    <div key={i} className="flex items-center gap-1 sm:gap-1.5">
+                      <span className="text-[10px] sm:text-xs text-white/60 w-4 text-center">{i + 1}.</span>
+                      <select
+                        value={step.track}
+                        onChange={(e) => updateStep(i, { track: e.target.value as CustomSequenceTrack })}
+                        className={cn(
+                          "text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded border text-white outline-none cursor-pointer",
+                          trackColor[step.track]
+                        )}
+                      >
+                        <option value="original" className="text-black">{originalLabel}</option>
+                        <option value="translation" className="text-black">{translationLabel}</option>
+                        <option value="example" className="text-black">Example sentence</option>
+                      </select>
+                      <div className="flex items-center rounded border border-white/30 bg-white/10 overflow-hidden">
+                        <button onClick={() => updateStep(i, { repeat: Math.max(1, step.repeat - 1) })} className="px-1 py-0.5 text-white hover:bg-white/20">
+                          <Minus className="w-2.5 h-2.5" />
+                        </button>
+                        <span className="px-1.5 py-0.5 text-[10px] sm:text-xs font-bold text-white min-w-[24px] text-center border-x border-white/30">×{step.repeat}</span>
+                        <button onClick={() => updateStep(i, { repeat: step.repeat + 1 })} className="px-1 py-0.5 text-white hover:bg-white/20">
+                          <Plus className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                      <button onClick={() => moveStep(i, -1)} disabled={i === 0} className="p-0.5 rounded text-white/80 hover:bg-white/20 disabled:opacity-30">
+                        <ArrowUp className="w-3 h-3" />
+                      </button>
+                      <button onClick={() => moveStep(i, 1)} disabled={i === customSequence.length - 1} className="p-0.5 rounded text-white/80 hover:bg-white/20 disabled:opacity-30">
+                        <ArrowDown className="w-3 h-3" />
+                      </button>
+                      <button onClick={() => removeStep(i)} className="p-0.5 rounded text-rose-300 hover:bg-rose-500/30">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+                  <span className="text-[10px] sm:text-xs text-white/60">Add:</span>
+                  <button onClick={() => addStep("original")} className="px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold bg-emerald-500/40 hover:bg-emerald-500/60 text-white border border-emerald-300/50">+ {originalLabel}</button>
+                  <button onClick={() => addStep("translation")} className="px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold bg-sky-500/40 hover:bg-sky-500/60 text-white border border-sky-300/50">+ {translationLabel}</button>
+                  <button onClick={() => addStep("example")} className="px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold bg-amber-500/40 hover:bg-amber-500/60 text-white border border-amber-300/50">+ Example</button>
+                </div>
+              </div>
+            )}
+
             {/* Autoplay Controls Row */}
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
               <span className="text-[10px] sm:text-xs text-white/70 font-medium">Autoplay:</span>
@@ -653,11 +772,23 @@ export function FlashcardView(props: FlashcardViewProps) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (mode === "custom") {
+                            // 3-state cycle: start+open -> close panel (keep playing) -> stop
+                            const isPlaying = autoplayMode === "custom" && isAutoplayActive;
+                            if (!isPlaying) {
+                              setShowSequenceEditor(true);
+                              onAutoplayModeChange("custom");
+                            } else if (showSequenceEditor) {
+                              setShowSequenceEditor(false);
+                            } else {
+                              onAutoplayModeChange("off");
+                            }
+                            return;
+                          }
                           if (autoplayMode === mode && isAutoplayActive) { onAutoplayModeChange("off"); return; }
                           if (autoplayMode === "chinese" && mode === "english") { onAutoplayModeChange("chinese-to-english"); return; }
                           if (autoplayMode === "english" && mode === "chinese") { onAutoplayModeChange("english-to-chinese"); return; }
                           onAutoplayModeChange(mode);
-                          if (mode === "custom") setShowSequenceEditor(true);
                         }}
                         className={cn(
                           "px-1.5 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-colors border-l border-white/30 first:border-l-0",
@@ -752,25 +883,10 @@ export function FlashcardView(props: FlashcardViewProps) {
               </Tooltip>
 
               {/* Sequence editor toggle */}
-              <div className="relative">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const stage = seqClickStage.current;
-                      if (stage === 0) {
-                        setShowSequenceEditor(true);
-                        if (customSequence.length > 0) onAutoplayModeChange("custom");
-                        seqClickStage.current = 1;
-                      }
-                      else if (stage === 1) { setShowSequenceEditor(false); seqClickStage.current = 2; }
-                      else {
-                        if (autoplayMode === "custom") onAutoplayModeChange("off");
-                        setShowSequenceEditor(false);
-                        seqClickStage.current = 0;
-                      }
-                    }}
+                    onClick={(e) => { e.stopPropagation(); setShowSequenceEditor((v) => !v); }}
                     className={cn(
                       "p-1 sm:p-1.5 rounded-full transition-colors",
                       showSequenceEditor ? "bg-violet-500 text-white" : "bg-white/20 text-white hover:bg-white/30"
@@ -782,113 +898,6 @@ export function FlashcardView(props: FlashcardViewProps) {
                 <TooltipContent><p>Custom sequence editor</p></TooltipContent>
               </Tooltip>
 
-              {/* Custom sequence editor (floating panel, anchored above the icon) */}
-              {showSequenceEditor && (
-                <div
-                  className="absolute bottom-full mb-3 right-0 z-50 w-[320px] max-w-[88vw] rounded-lg border border-white/15 bg-neutral-900/95 backdrop-blur-md p-2 shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Header */}
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="text-[11px] font-semibold text-white leading-tight whitespace-nowrap">Custom sequence (per word)</span>
-                    <button
-                      onClick={() => {
-                        if (autoplayMode === "custom" && isAutoplayActive) onAutoplayModeChange("off");
-                        else onAutoplayModeChange("custom");
-                      }}
-                      disabled={customSequence.length === 0}
-                      className={cn(
-                        "ml-auto shrink-0 min-w-[104px] text-center px-2 py-[3px] rounded-full text-[10px] font-semibold whitespace-nowrap transition-colors disabled:opacity-40",
-                        autoplayMode === "custom" && isAutoplayActive
-                          ? "bg-emerald-500 text-white"
-                          : "bg-white/15 text-white hover:bg-white/25"
-                      )}
-                    >
-                      {autoplayMode === "custom" && isAutoplayActive ? "Playing — Stop" : "Play this sequence"}
-                    </button>
-                    <button onClick={() => { setShowSequenceEditor(false); seqClickStage.current = 0; }} className="p-0.5 rounded-full text-white/70 hover:bg-white/15">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Preset row */}
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="text-[10px] text-white/60">Preset:</span>
-                    <select
-                      value={activePresetId ?? ""}
-                      onChange={(e) => e.target.value && onSelectPreset(e.target.value)}
-                      className="flex-1 max-w-[110px] text-[10px] rounded bg-white/10 border border-white/20 text-white px-1 py-[2px] outline-none"
-                    >
-                      <option value="" className="bg-neutral-900">— none —</option>
-                      {sequencePresets.map((p) => (
-                        <option key={p.id} value={p.id} className="bg-neutral-900">{p.name}</option>
-                      ))}
-                    </select>
-                    {isDirty && <span className="text-amber-300 text-[10px]">•</span>}
-                    <button
-                      onClick={() => {
-                        const name = presetSaveName.trim() || window.prompt("Save sequence as:")?.trim();
-                        if (name) { onSaveAsPreset(name); setPresetSaveName(""); }
-                      }}
-                      disabled={customSequence.length === 0}
-                      className="ml-auto px-1.5 py-[3px] rounded text-[10px] font-semibold bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-40"
-                    >
-                      + Save as…
-                    </button>
-                  </div>
-
-                  {/* Steps */}
-                  <div className="space-y-1 max-h-[150px] overflow-y-auto pr-1">
-                    {customSequence.map((step, i) => (
-                      <div key={i} className="flex items-center gap-1">
-                        <span className="w-3.5 text-right text-[10px] text-white/60">{i + 1}.</span>
-                        <select
-                          value={step.track}
-                          onChange={(e) => updateStep(i, { track: e.target.value as CustomSequenceTrack })}
-                          className={cn(
-                            "flex-1 min-w-0 text-[10px] font-bold rounded px-1.5 py-[3px] text-white border outline-none",
-                            trackColor[step.track]
-                          )}
-                        >
-                          <option value="original" className="bg-neutral-900">{originalLabel}</option>
-                          <option value="translation" className="bg-neutral-900">{translationLabel}</option>
-                          <option value="example" className="bg-neutral-900">Example sentence</option>
-                        </select>
-                        <div className="flex items-center rounded border border-white/20 bg-white/5 text-white text-[10px]">
-                          <button onClick={() => updateStep(i, { repeat: Math.max(1, step.repeat - 1) })} className="px-1 py-[3px] hover:bg-white/15">
-                            <Minus className="w-2.5 h-2.5" />
-                          </button>
-                          <span className="px-1 min-w-[20px] text-center">×{step.repeat}</span>
-                          <button onClick={() => updateStep(i, { repeat: step.repeat + 1 })} className="px-1 py-[3px] hover:bg-white/15">
-                            <Plus className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                        <button onClick={() => moveStep(i, -1)} disabled={i === 0} className="p-0.5 rounded text-white/70 hover:bg-white/15 disabled:opacity-25">
-                          <ArrowUp className="w-3 h-3" />
-                        </button>
-                        <button onClick={() => moveStep(i, 1)} disabled={i === customSequence.length - 1} className="p-0.5 rounded text-white/70 hover:bg-white/15 disabled:opacity-25">
-                          <ArrowDown className="w-3 h-3" />
-                        </button>
-                        <button onClick={() => removeStep(i)} className="p-0.5 rounded text-red-400 hover:bg-white/15">
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                    {customSequence.length === 0 && (
-                      <span className="text-[10px] text-white/50 italic">Empty — add steps below.</span>
-                    )}
-                  </div>
-
-                  {/* Add row */}
-                  <div className="flex items-center gap-1 mt-2 text-[10px]">
-                    <span className="text-white/60">Add:</span>
-                    <button onClick={() => addStep("original")} className="px-1.5 py-[3px] rounded font-bold bg-emerald-600 text-white hover:bg-emerald-500 truncate">+ {originalLabel}</button>
-                    <button onClick={() => addStep("translation")} className="px-1.5 py-[3px] rounded font-bold bg-sky-600 text-white hover:bg-sky-500 truncate">+ {translationLabel}</button>
-                    <button onClick={() => addStep("example")} className="px-1.5 py-[3px] rounded font-bold bg-amber-600 text-white hover:bg-amber-500">+ Example</button>
-                  </div>
-                </div>
-              )}
-              </div>
 
               {/* Preset menu */}
               <DropdownMenu>
