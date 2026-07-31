@@ -21,6 +21,8 @@ export interface VocabularyWord {
   isCollocation?: boolean;
   /** Extra columns from the imported spreadsheet (label -> text) */
   extraColumns?: Record<string, string>;
+  /** Meanings (comma-separated chunks of the translation) the user unchecked — hidden on the card */
+  hiddenMeanings?: string[];
 }
 
 export interface VocabularyDeck {
