@@ -9,6 +9,7 @@ import { useAudio } from "@/hooks/useAudio";
 import { useStudySession } from "@/hooks/useStudySession";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { previewExcelFile, buildWordsFromMapping, type SheetPreview } from "@/utils/excelParser";
+import { parseSenseWorkbook } from "@/utils/senseWorkbook";
 import { ColumnMappingDialog } from "@/components/ColumnMappingDialog";
 import { useToast } from "@/hooks/use-toast";
 import { CustomSequenceStep } from "@/types/vocabulary";
@@ -305,6 +306,22 @@ const Index = () => {
       const previews: SheetPreview[] = [];
       const failed: string[] = [];
       for (const [i, file] of files.entries()) {
+        // Sense Map / Reverse Index workbooks import directly — one card per sense,
+        // so there is no column mapping to confirm.
+        const sense = await parseSenseWorkbook(file);
+        if (sense.success) {
+          const deckId = vocabulary.addDeck(sense.filename, sense.words, sense.languages);
+          if (handles?.[i] && deckId) void setDeckFileHandle(deckId, handles[i]);
+          const s = sense.stats;
+          toast({
+            title: `Imported “${sense.filename}” (sense format)`,
+            description: s
+              ? `${s.senses} senses from ${s.sourceRows} words · ${s.reverseEntries} reverse entries · ${s.needsReview} need review`
+              : `${sense.words.length} senses`,
+            duration: 5000,
+          });
+          continue;
+        }
         const preview = await previewExcelFile(file);
         if (preview.success) {
           if (handles?.[i]) pendingHandles.current[preview.filename] = handles[i];
@@ -321,7 +338,7 @@ const Index = () => {
       }
       if (previews.length) setPreviewQueue((prev) => [...prev, ...previews]);
     },
-    [toast]
+    [toast, vocabulary]
   );
 
   const handleConfirmMapping = useCallback(
