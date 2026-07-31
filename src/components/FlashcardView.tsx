@@ -523,23 +523,42 @@ export function FlashcardView(props: FlashcardViewProps) {
                           {word.pinyin}
                         </motion.p>
                       )}
-                      <p className="font-chinese text-white font-bold leading-tight"
+                      <p ref={frontWordRef} className="font-chinese text-white font-bold leading-tight"
                         style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}>
-                        {word.chinese}
+                        {displayedFront}
                       </p>
-                      {onEditWord && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); startEdit("chinese", word.chinese); }}
-                              className="mt-1 shrink-0 p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Edit {originalLabel}</p></TooltipContent>
-                        </Tooltip>
-                      )}
+                      <div className="flex flex-col gap-1.5 mt-1 shrink-0">
+                        {onEditWord && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); startEdit("chinese", word.chinese); }}
+                                className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Edit {originalLabel}</p></TooltipContent>
+                          </Tooltip>
+                        )}
+                        {hasMultipleFront && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); meaningsSide === "front" ? closeMeanings() : openMeanings("front"); }}
+                                className={cn(
+                                  "flex items-center gap-0.5 px-1.5 py-1.5 rounded-full transition-colors",
+                                  meaningsSide === "front" ? "bg-emerald-500 text-white" : "bg-white/20 hover:bg-white/30 text-white",
+                                )}
+                              >
+                                <Layers className="w-3.5 h-3.5" />
+                                <span className="text-[10px] font-semibold leading-none">{frontMeanings.length}</span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{frontMeanings.length} meanings — pick which to show</p></TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                     </div>
                   )}
                   {word.explanation && (
