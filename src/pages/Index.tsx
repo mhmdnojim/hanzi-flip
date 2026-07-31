@@ -256,14 +256,19 @@ const Index = () => {
 
   // ── Import: preview each file, let the user confirm the column mapping ──
   const [previewQueue, setPreviewQueue] = useState<SheetPreview[]>([]);
+  // filename -> FileSystemFileHandle captured at import time (write-back target)
+  const pendingHandles = useRef<Record<string, unknown>>({});
 
   const handleImport = useCallback(
-    async (files: File[]) => {
+    async (files: File[], handles?: unknown[]) => {
       const previews: SheetPreview[] = [];
       const failed: string[] = [];
-      for (const file of files) {
+      for (const [i, file] of files.entries()) {
         const preview = await previewExcelFile(file);
-        if (preview.success) previews.push(preview);
+        if (preview.success) {
+          if (handles?.[i]) pendingHandles.current[preview.filename] = handles[i];
+          previews.push(preview);
+        }
         else failed.push(`${file.name}: ${preview.error}`);
       }
       if (failed.length) {
@@ -284,7 +289,17 @@ const Index = () => {
       if (!preview) return;
       const result = buildWordsFromMapping(preview, mapping);
       if (result.success) {
-        vocabulary.addDeck(result.filename || preview.filename, result.words, result.languages);
+        const deckId = vocabulary.addDeck(
+          result.filename || preview.filename,
+          result.words,
+          result.languages,
+          result.columns,
+        );
+        const handle = pendingHandles.current[preview.filename];
+        if (handle && deckId) {
+          void setDeckFileHandle(deckId, handle);
+          delete pendingHandles.current[preview.filename];
+        }
         toast({
           title: `Imported “${preview.filename}”`,
           description: `${result.words.length} words`,
