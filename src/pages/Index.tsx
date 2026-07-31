@@ -17,7 +17,8 @@ import {
   genPresetId, sequenceSignature, type SequencePreset,
 } from "@/lib/sequencePresets";
 import { detectLanguageNameFromText } from "@/lib/detectLanguage";
-import { setDeckFileHandle, saveDeckToExcel } from "@/lib/excelSync";
+import { setDeckFileHandle, saveDeckToExcel, downloadDeckAsExcel } from "@/lib/excelSync";
+import { ToastAction } from "@/components/ui/toast";
 import { getLanguage } from "@/utils/languages";
 import {
   applyTheme, loadThemeId, saveThemeId,
