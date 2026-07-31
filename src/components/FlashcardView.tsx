@@ -759,7 +759,11 @@ export function FlashcardView(props: FlashcardViewProps) {
                     onClick={(e) => {
                       e.stopPropagation();
                       const stage = seqClickStage.current;
-                      if (stage === 0) { setShowSequenceEditor(true); seqClickStage.current = 1; }
+                      if (stage === 0) {
+                        setShowSequenceEditor(true);
+                        if (customSequence.length > 0) onAutoplayModeChange("custom");
+                        seqClickStage.current = 1;
+                      }
                       else if (stage === 1) { setShowSequenceEditor(false); seqClickStage.current = 2; }
                       else {
                         if (autoplayMode === "custom") onAutoplayModeChange("off");
