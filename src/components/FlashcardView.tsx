@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Heart, ChevronLeft, ChevronRight, Volume2,
@@ -163,6 +163,17 @@ export function FlashcardView(props: FlashcardViewProps) {
   const backSel = useMeaningSelection(word.id, translationLabel, backMeanings);
   const displayedFront = hasMultipleFront ? joinMeanings(frontSel.selected) : word.chinese;
   const displayedTranslation = hasMultipleBack ? joinMeanings(backSel.selected) : word.english;
+  // Keep the transcription in sync with the selected meanings (hidden meaning → hidden transcription)
+  const displayedPinyin = useMemo(() => {
+    if (!word.pinyin) return "";
+    if (!hasMultipleFront) return word.pinyin;
+    const parts = splitMeanings(word.pinyin);
+    if (parts.length !== frontMeanings.length) return word.pinyin;
+    const kept = frontMeanings
+      .map((m, i) => (frontSel.selected.includes(m) ? parts[i] : null))
+      .filter((p): p is string => !!p);
+    return kept.length ? joinMeanings(kept) : word.pinyin;
+  }, [word.pinyin, hasMultipleFront, frontMeanings, frontSel.selected]);
   const isRtl = (label: string) =>
     !!LANGUAGES.find((l) => l.name === label || l.native === label || l.short === label)?.rtl;
 
@@ -520,7 +531,7 @@ export function FlashcardView(props: FlashcardViewProps) {
                           animate={{ opacity: 1, y: 0 }}
                           className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
                         >
-                          {word.pinyin}
+                          {displayedPinyin}
                         </motion.p>
                       )}
                       <p ref={frontWordRef} className="font-chinese text-white font-bold leading-tight"
