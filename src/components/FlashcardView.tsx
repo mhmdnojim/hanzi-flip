@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { sequenceSignature, type SequencePreset } from "@/lib/sequencePresets";
+import { LANGUAGES } from "@/utils/languages";
 
 interface FlashcardViewProps {
   word: VocabularyWord;
@@ -270,11 +271,21 @@ export function FlashcardView(props: FlashcardViewProps) {
     onSeek(Math.round((x / rect.width) * (totalWords - 1)));
   };
 
+  const langAbbr = (label: string) => {
+    const match = LANGUAGES.find(
+      (l) => l.name.toLowerCase() === label.toLowerCase() || l.native.toLowerCase() === label.toLowerCase()
+    );
+    const base = match ? match.code.replace(/-.*$/, "") : label;
+    return base.slice(0, 2).toUpperCase();
+  };
+  const origAbbr = langAbbr(originalLabel);
+  const transAbbr = langAbbr(translationLabel);
+
   const autoplayOptions = [
-    { mode: "chinese" as AutoplayMode, label: originalLabel === "Chinese" ? "中" : "Orig", tooltip: `Autoplay ${originalLabel} only` },
-    { mode: "english" as AutoplayMode, label: translationLabel === "English" ? "EN" : "Trans", tooltip: `Autoplay ${translationLabel} only` },
-    { mode: "chinese-to-english" as AutoplayMode, label: "→", tooltip: `${originalLabel} → ${translationLabel}` },
-    { mode: "english-to-chinese" as AutoplayMode, label: "←", tooltip: `${translationLabel} → ${originalLabel}` },
+    { mode: "chinese" as AutoplayMode, label: origAbbr, tooltip: `Autoplay ${originalLabel} only` },
+    { mode: "english" as AutoplayMode, label: transAbbr, tooltip: `Autoplay ${translationLabel} only` },
+    { mode: "chinese-to-english" as AutoplayMode, label: `${origAbbr}→${transAbbr}`, tooltip: `${originalLabel} → ${translationLabel}` },
+    { mode: "english-to-chinese" as AutoplayMode, label: `${transAbbr}→${origAbbr}`, tooltip: `${translationLabel} → ${originalLabel}` },
     { mode: "custom" as AutoplayMode, label: "Custom", tooltip: "Custom playback sequence" },
   ];
 
