@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { FlashcardView } from "@/components/FlashcardView";
 import { CompactToolbar } from "@/components/CompactToolbar";
@@ -17,6 +17,8 @@ import {
   genPresetId, sequenceSignature, type SequencePreset,
 } from "@/lib/sequencePresets";
 import { detectLanguageNameFromText } from "@/lib/detectLanguage";
+import { setDeckFileHandle, saveDeckToExcel, downloadDeckAsExcel } from "@/lib/excelSync";
+import { ToastAction } from "@/components/ui/toast";
 import { getLanguage } from "@/utils/languages";
 import {
   applyTheme, loadThemeId, saveThemeId,
@@ -256,14 +258,50 @@ const Index = () => {
 
   // ── Import: preview each file, let the user confirm the column mapping ──
   const [previewQueue, setPreviewQueue] = useState<SheetPreview[]>([]);
+  // filename -> FileSystemFileHandle captured at import time (write-back target)
+  const pendingHandles = useRef<Record<string, unknown>>({});
+
+  // ── Write edits back into the source Excel file (debounced) ──
+  const [editStamp, setEditStamp] = useState(0);
+  const savedStamp = useRef(0);
+  const deckRef = useRef(vocabulary.currentDeck);
+  deckRef.current = vocabulary.currentDeck;
+
+  useEffect(() => {
+    if (!editStamp || editStamp === savedStamp.current) return;
+    const t = setTimeout(async () => {
+      savedStamp.current = editStamp;
+      const written = await saveDeckToExcel(deckRef.current);
+      if (written) {
+        toast({ title: "Saved to Excel file", duration: 1500 });
+      } else {
+        // No writable file handle (browser without File System Access, or an
+        // older import) — offer to save the updated workbook instead.
+        toast({
+          title: "Edit saved",
+          description: "Save the updated Excel file to keep it in sync.",
+          duration: 6000,
+          action: (
+            <ToastAction altText="Save Excel" onClick={() => void downloadDeckAsExcel(deckRef.current)}>
+              Save Excel
+            </ToastAction>
+          ),
+        });
+      }
+    }, 700);
+    return () => clearTimeout(t);
+  }, [editStamp, toast]);
 
   const handleImport = useCallback(
-    async (files: File[]) => {
+    async (files: File[], handles?: unknown[]) => {
       const previews: SheetPreview[] = [];
       const failed: string[] = [];
-      for (const file of files) {
+      for (const [i, file] of files.entries()) {
         const preview = await previewExcelFile(file);
-        if (preview.success) previews.push(preview);
+        if (preview.success) {
+          if (handles?.[i]) pendingHandles.current[preview.filename] = handles[i];
+          previews.push(preview);
+        }
         else failed.push(`${file.name}: ${preview.error}`);
       }
       if (failed.length) {
@@ -284,7 +322,17 @@ const Index = () => {
       if (!preview) return;
       const result = buildWordsFromMapping(preview, mapping);
       if (result.success) {
-        vocabulary.addDeck(result.filename || preview.filename, result.words, result.languages);
+        const deckId = vocabulary.addDeck(
+          result.filename || preview.filename,
+          result.words,
+          result.languages,
+          result.columns,
+        );
+        const handle = pendingHandles.current[preview.filename];
+        if (handle && deckId) {
+          void setDeckFileHandle(deckId, handle);
+          delete pendingHandles.current[preview.filename];
+        }
         toast({
           title: `Imported “${preview.filename}”`,
           description: `${result.words.length} words`,
@@ -514,6 +562,8 @@ const Index = () => {
                 next.values = { ...(source?.values || {}), ...(next.values || {}), [vocabulary.studyLang]: patch.chinese };
               }
               vocabulary.updateWord(activeWord.id, next);
+              // Persist the edit back into the source .xlsx (debounced)
+              setEditStamp(Date.now());
             }}
           />
         </div>

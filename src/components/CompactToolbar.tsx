@@ -51,7 +51,7 @@ interface CompactToolbarProps {
   currentDeckId: string;
   onDeckChange: (deckId: string) => void;
   onDeleteDeck: (deckId: string) => void;
-  onImport: (files: File[]) => void;
+  onImport: (files: File[], handles?: unknown[]) => void;
   /** Multi-language selection */
   availableLanguages: string[];
   studyLang: string;
@@ -87,6 +87,23 @@ export function CompactToolbar(props: CompactToolbarProps) {
       props.onImport(files);
     }
     e.target.value = "";
+  };
+
+  // When available, pick files through the File System Access API so edits can be
+  // written straight back into the original .xlsx file.
+  const pickWithHandles = async (e: React.MouseEvent) => {
+    const picker = (window as any).showOpenFilePicker;
+    if (typeof picker !== "function") return; // fall through to the <input>
+    e.preventDefault();
+    try {
+      const handles = await picker({
+        multiple: true,
+        types: [{ description: "Excel files", accept: { "application/vnd.ms-excel": [".xls"], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"] } }],
+      });
+      const files: File[] = [];
+      for (const handle of handles) files.push(await handle.getFile());
+      if (files.length) props.onImport(files, handles);
+    } catch { /* user cancelled */ }
   };
 
   const studyLanguage = getLanguage(props.studyLang);
@@ -143,7 +160,7 @@ export function CompactToolbar(props: CompactToolbarProps) {
               className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border-orange-400 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950"
               asChild
             >
-              <label className="cursor-pointer">
+              <label className="cursor-pointer" onClick={pickWithHandles}>
                 <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <input type="file" accept=".xlsx,.xls" multiple className="hidden" onChange={handleFileUpload} />
               </label>

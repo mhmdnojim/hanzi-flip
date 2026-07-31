@@ -13,6 +13,13 @@ interface ParseResult {
   filename?: string;
   /** every language code detected in the sheet */
   languages?: string[];
+  /** original sheet layout, kept so edits can be written back to the file */
+  columns?: {
+    headers: string[];
+    mapping: Record<string, string>;
+    exampleCol?: string;
+    explanationCol?: string;
+  };
 }
 
 export interface SheetPreview {
@@ -146,7 +153,18 @@ export function buildWordsFromMapping(
     return { success: false, words: [], error: "No valid vocabulary entries found in the file" };
   }
 
-  return { success: true, words, languages, filename: preview.filename };
+  return {
+    success: true,
+    words,
+    languages,
+    filename: preview.filename,
+    columns: {
+      headers: preview.headers,
+      mapping,
+      exampleCol: preview.exampleCol,
+      explanationCol: preview.explanationCol,
+    },
+  };
 }
 
 /** Shared auto-detection: header -> language code (or null) */
