@@ -32,6 +32,15 @@ export interface VocabularyDeck {
   createdAt: Date;
   /** language codes present in this deck (real languages + transcriptions) */
   languages?: string[];
+  /** Original spreadsheet layout, used to write edits back to the .xlsx file */
+  columns?: {
+    headers: string[];
+    /** header -> language code */
+    mapping: Record<string, string>;
+    exampleCol?: string;
+    explanationCol?: string;
+    sheetName?: string;
+  };
 }
 
 export interface StudyProgress {
