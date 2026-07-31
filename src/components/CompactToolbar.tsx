@@ -228,14 +228,19 @@ export function CompactToolbar(props: CompactToolbarProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Translation language */}
+        {/* Show translation — opens the back (translation) language list */}
         <DropdownMenu>
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 sm:h-9 px-2 sm:px-3 gap-1 text-xs sm:text-sm rounded-full">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-8 sm:h-9 px-2 sm:px-3 gap-1 rounded-full bg-primary hover:bg-primary/90 text-xs sm:text-sm"
+                >
+                  <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline text-[10px] uppercase opacity-70">Back</span>
-                  → {translationLanguage.short}
+                  {props.showChineseFirst ? studyLanguage.short : translationLanguage.short}
                   <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
@@ -245,15 +250,26 @@ export function CompactToolbar(props: CompactToolbarProps) {
             </TooltipContent>
           </Tooltip>
           <DropdownMenuContent>
+            <DropdownMenuItem
+              onClick={() => {
+                props.onToggleChineseFirst();
+                props.onResetFlip();
+              }}
+            >
+              {props.showChineseFirst
+                ? `Show ${translationLanguage.name} on front`
+                : `Show ${studyLanguage.name} on front`}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             {props.availableLanguages.map((code) => (
-                <DropdownMenuItem
-                  key={code}
-                  onClick={() => props.onTranslationLangChange(code)}
-                  className={cn(code === props.translationLang && "bg-accent")}
-                >
-                  {getLanguage(code).name}
-                </DropdownMenuItem>
-              ))}
+              <DropdownMenuItem
+                key={code}
+                onClick={() => props.onTranslationLangChange(code)}
+                className={cn(code === props.translationLang && "bg-accent")}
+              >
+                {getLanguage(code).name}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -278,31 +294,6 @@ export function CompactToolbar(props: CompactToolbarProps) {
           </TooltipTrigger>
           <TooltipContent>
             <p>{props.isShuffled ? "Reset to sequential order" : "Shuffle cards"}</p>
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Language First - Fixed width to prevent layout shift */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => {
-                props.onToggleChineseFirst();
-                props.onResetFlip();
-              }}
-              className="h-8 sm:h-9 w-16 sm:w-20 rounded-full bg-primary hover:bg-primary/90 text-xs sm:text-sm"
-            >
-              <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
-              {props.showChineseFirst ? studyLanguage.short : translationLanguage.short}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>
-              {props.showChineseFirst
-                ? `Show ${translationLanguage.name} on front`
-                : `Show ${studyLanguage.name} on front`}
-            </p>
           </TooltipContent>
         </Tooltip>
 
