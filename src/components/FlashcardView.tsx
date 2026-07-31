@@ -491,12 +491,6 @@ export function FlashcardView(props: FlashcardViewProps) {
             >
               {showChinese ? (
                 <>
-                  {showPinyin && word.pinyin && (
-                    <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                      className="text-lg sm:text-xl md:text-2xl text-white/80 font-medium">
-                      {word.pinyin}
-                    </motion.p>
-                  )}
                   {editingField === "chinese" ? (
                     <input
                       autoFocus
@@ -513,7 +507,17 @@ export function FlashcardView(props: FlashcardViewProps) {
                       style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}
                     />
                   ) : (
-                    <div className="flex items-start justify-center gap-2">
+                    <div className="relative flex items-start justify-center gap-2">
+                      {/* Transcription floats above the word so toggling it never shifts the layout */}
+                      {showPinyin && word.pinyin && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
+                        >
+                          {word.pinyin}
+                        </motion.p>
+                      )}
                       <p className="font-chinese text-white font-bold leading-tight"
                         style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}>
                         {word.chinese}
