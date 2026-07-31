@@ -163,9 +163,16 @@ const Index = () => {
       (index: number) => {
         const w = wordsWithExamples[index];
         if (!w) return null;
-        return { chinese: w.chinese, english: w.english, example: w.exampleSentence };
+        // Speak only the meanings the user kept checked (matches what's displayed)
+        const frontLang = getLanguage(vocabulary.studyLang).name;
+        const backLang = getLanguage(vocabulary.translationLang).name;
+        return {
+          chinese: getSelectedText(w.id, frontLang, w.chinese),
+          english: getSelectedText(w.id, backLang, w.english),
+          example: w.exampleSentence,
+        };
       },
-      [wordsWithExamples]
+      [wordsWithExamples, vocabulary.studyLang, vocabulary.translationLang]
     ),
     isFlipped,
     languageGap,
