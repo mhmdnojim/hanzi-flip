@@ -510,6 +510,9 @@ const Index = () => {
               if (patch.english !== undefined) {
                 next.values = { ...(source?.values || {}), [vocabulary.translationLang]: patch.english };
               }
+              if (patch.chinese !== undefined) {
+                next.values = { ...(source?.values || {}), ...(next.values || {}), [vocabulary.studyLang]: patch.chinese };
+              }
               vocabulary.updateWord(activeWord.id, next);
             }}
           />
