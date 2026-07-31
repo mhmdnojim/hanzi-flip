@@ -755,21 +755,7 @@ export function FlashcardView(props: FlashcardViewProps) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const stage = seqClickStage.current;
-                      if (stage === 0) {
-                        setShowSequenceEditor(true);
-                        if (customSequence.length > 0) onAutoplayModeChange("custom");
-                        seqClickStage.current = 1;
-                      }
-                      else if (stage === 1) { setShowSequenceEditor(false); seqClickStage.current = 2; }
-                      else {
-                        if (autoplayMode === "custom") onAutoplayModeChange("off");
-                        setShowSequenceEditor(false);
-                        seqClickStage.current = 0;
-                      }
-                    }}
+                    onClick={(e) => { e.stopPropagation(); setShowSequenceEditor((v) => !v); }}
                     className={cn(
                       "p-1 sm:p-1.5 rounded-full transition-colors",
                       showSequenceEditor ? "bg-violet-500 text-white" : "bg-white/20 text-white hover:bg-white/30"
