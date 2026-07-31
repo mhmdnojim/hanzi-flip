@@ -206,6 +206,16 @@ export function applyTheme(id: string): void {
   const theme = getTheme(id);
   const root = document.documentElement;
   Object.entries(theme.vars).forEach(([key, value]) => root.style.setProperty(key, value));
+  // Flashcard surfaces follow the active theme (front = primary → accent, back = accent → highlight)
+  const [, primary, accent, highlight] = theme.swatch;
+  root.style.setProperty(
+    '--card-front-gradient',
+    `linear-gradient(135deg, hsl(${primary}) 0%, hsl(${accent}) 100%)`,
+  );
+  root.style.setProperty(
+    '--card-back-gradient',
+    `linear-gradient(135deg, hsl(${accent}) 0%, hsl(${highlight}) 100%)`,
+  );
   root.classList.toggle('dark', theme.dark);
 }
 
