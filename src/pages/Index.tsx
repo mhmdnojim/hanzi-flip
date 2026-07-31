@@ -493,8 +493,8 @@ const Index = () => {
             showChineseFirst={showChineseFirst}
             fontSize={fontSize}
             onFontSizeChange={setFontSize}
-            onSpeakChinese={() => audio.speakChinese(activeWord.chinese)}
-            onSpeakEnglish={() => audio.speakEnglish(activeWord.english)}
+            onSpeakChinese={() => audio.speakChinese(getSelectedText(activeWord.id, originalLabel, activeWord.chinese))}
+            onSpeakEnglish={() => audio.speakEnglish(getSelectedText(activeWord.id, translationLabel, activeWord.english))}
             autoplayMode={studySession.autoplayMode}
             onAutoplayModeChange={studySession.setAutoplayMode}
             isAutoplayActive={studySession.isAutoplayActive}
