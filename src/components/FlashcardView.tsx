@@ -341,8 +341,8 @@ export function FlashcardView(props: FlashcardViewProps) {
           onMouseLeave={() => setHoveredZone(null)}
           style={{
             background: showChinese
-              ? "linear-gradient(135deg, hsl(340, 82%, 52%) 0%, hsl(280, 60%, 55%) 100%)"
-              : "linear-gradient(135deg, hsl(280, 60%, 55%) 0%, hsl(220, 70%, 50%) 100%)",
+              ? "var(--card-front-gradient, linear-gradient(135deg, hsl(340, 82%, 52%) 0%, hsl(280, 60%, 55%) 100%))"
+              : "var(--card-back-gradient, linear-gradient(135deg, hsl(280, 60%, 55%) 0%, hsl(220, 70%, 50%) 100%))",
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
