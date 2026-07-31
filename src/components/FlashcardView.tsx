@@ -164,7 +164,7 @@ export function FlashcardView(props: FlashcardViewProps) {
   const displayedFront = hasMultipleFront ? joinMeanings(frontSel.selected) : word.chinese;
   const displayedTranslation = hasMultipleBack ? joinMeanings(backSel.selected) : word.english;
   // Keep the transcription in sync with the selected meanings (hidden meaning → hidden transcription)
-  const displayedPinyin = React.useMemo(() => {
+  const displayedPinyin = useMemo(() => {
     if (!word.pinyin) return "";
     if (!hasMultipleFront) return word.pinyin;
     const parts = splitMeanings(word.pinyin);
