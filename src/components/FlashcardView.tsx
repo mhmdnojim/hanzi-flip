@@ -578,14 +578,89 @@ export function FlashcardView(props: FlashcardViewProps) {
                       style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
                     />
                   ) : (
-                    <p
-                      className="font-body text-white font-bold leading-tight px-4"
-                      style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
-                      onDoubleClick={(e) => { e.stopPropagation(); startEdit("english", word.english); }}
-                      title={onEditWord ? "Double-click to edit" : undefined}
-                    >
-                      {word.english}
-                    </p>
+                    <div className="relative flex items-start justify-center gap-2">
+                      <p
+                        className="font-body text-white font-bold leading-tight px-2"
+                        style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
+                        onDoubleClick={(e) => { e.stopPropagation(); startEdit("english", word.english); }}
+                        title={onEditWord ? "Double-click to edit" : undefined}
+                      >
+                        {displayedTranslation}
+                      </p>
+                      <div className="flex flex-col gap-1.5 mt-1 shrink-0">
+                        {onEditWord && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); startEdit("english", word.english); }}
+                                className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Edit {translationLabel}</p></TooltipContent>
+                          </Tooltip>
+                        )}
+                        {onEditWord && hasMultipleMeanings && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setShowMeanings((v) => !v); }}
+                                className={cn(
+                                  "p-1.5 rounded-full transition-colors",
+                                  showMeanings ? "bg-emerald-500 text-white" : "bg-white/20 hover:bg-white/30 text-white",
+                                )}
+                              >
+                                <ListChecks className="w-3.5 h-3.5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Choose which meanings to show</p></TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+
+                      {showMeanings && hasMultipleMeanings && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-40 w-[260px] rounded-xl bg-black/85 backdrop-blur-md border border-white/20 shadow-2xl p-2.5 text-left"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-white/80">
+                              {translationLabel} — {meaningChunks.length} meanings
+                            </span>
+                            <button onClick={() => setShowMeanings(false)} className="p-0.5 rounded hover:bg-white/20 text-white/70">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <div className="space-y-1 max-h-48 overflow-y-auto">
+                            {meaningChunks.map((m, i) => {
+                              const checked = !hiddenMeanings.includes(m);
+                              return (
+                                <button
+                                  key={`${m}-${i}`}
+                                  onClick={() => toggleMeaning(m)}
+                                  className={cn(
+                                    "w-full flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors",
+                                    checked ? "bg-emerald-600/50 text-white" : "bg-white/5 text-white/70 hover:bg-white/10",
+                                  )}
+                                >
+                                  <span className={cn(
+                                    "w-4 h-4 shrink-0 rounded border flex items-center justify-center",
+                                    checked ? "bg-emerald-400 border-emerald-300" : "border-white/40",
+                                  )}>
+                                    {checked && <Check className="w-3 h-3 text-black" />}
+                                  </span>
+                                  <span className="flex-1 text-left">{m}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <p className="mt-2 text-[10px] text-white/50 leading-snug">
+                            Check the meanings to show on the card.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   )}
                   {word.explanation && (
                     <p className="text-xs sm:text-sm text-white/70 max-w-md text-center">{word.explanation}</p>
