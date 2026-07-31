@@ -802,13 +802,16 @@ export function FlashcardView(props: FlashcardViewProps) {
                         else onAutoplayModeChange("custom");
                       }}
                       className={cn(
-                        "px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold border transition-colors whitespace-nowrap",
+                        "px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold border transition-colors whitespace-nowrap grid place-items-center",
                         autoplayMode === "custom" && isAutoplayActive
                           ? "bg-emerald-500 text-white border-emerald-300"
                           : "bg-white/10 text-white border-white/30 hover:bg-white/20"
                       )}
                     >
-                      {autoplayMode === "custom" && isAutoplayActive ? "Playing — Stop" : "Play this sequence"}
+                      <span className="col-start-1 row-start-1 invisible">Play this sequence</span>
+                      <span className="col-start-1 row-start-1">
+                        {autoplayMode === "custom" && isAutoplayActive ? "Playing — Stop" : "Play this sequence"}
+                      </span>
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setShowSequenceEditor(false); }}
