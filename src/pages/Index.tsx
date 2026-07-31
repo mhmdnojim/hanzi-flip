@@ -260,6 +260,24 @@ const Index = () => {
   // filename -> FileSystemFileHandle captured at import time (write-back target)
   const pendingHandles = useRef<Record<string, unknown>>({});
 
+  // ── Write edits back into the source Excel file (debounced) ──
+  const [editStamp, setEditStamp] = useState(0);
+  const savedStamp = useRef(0);
+  const deckRef = useRef(vocabulary.currentDeck);
+  deckRef.current = vocabulary.currentDeck;
+
+  useEffect(() => {
+    if (!editStamp || editStamp === savedStamp.current) return;
+    const t = setTimeout(async () => {
+      savedStamp.current = editStamp;
+      const written = await saveDeckToExcel(deckRef.current);
+      if (written) {
+        toast({ title: "Saved to Excel file", duration: 1500 });
+      }
+    }, 700);
+    return () => clearTimeout(t);
+  }, [editStamp, toast]);
+
   const handleImport = useCallback(
     async (files: File[], handles?: unknown[]) => {
       const previews: SheetPreview[] = [];
