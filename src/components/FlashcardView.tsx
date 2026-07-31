@@ -132,12 +132,13 @@ export function FlashcardView(props: FlashcardViewProps) {
   const [renameDraft, setRenameDraft] = useState("");
   const [presetSaveName, setPresetSaveName] = useState("");
   const [pausedMode, setPausedMode] = useState<AutoplayMode | null>(null);
-  const [editingField, setEditingField] = useState<"english" | "exampleTranslation" | null>(null);
+  const [editingField, setEditingField] = useState<"english" | "chinese" | "exampleTranslation" | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [showMeanings, setShowMeanings] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const suppressClickRef = useRef(false);
 
-  const startEdit = (field: "english" | "exampleTranslation", value: string) => {
+  const startEdit = (field: "english" | "chinese" | "exampleTranslation", value: string) => {
     if (!onEditWord) return;
     setEditingField(field);
     setEditDraft(value);
@@ -146,6 +147,29 @@ export function FlashcardView(props: FlashcardViewProps) {
     if (editingField && onEditWord) onEditWord({ [editingField]: editDraft } as Partial<VocabularyWord>);
     setEditingField(null);
   };
+
+  // ---- Multiple meanings (comma-separated chunks of the translation) ----
+  const meaningChunks = (word.english || "")
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
+  const hasMultipleMeanings = meaningChunks.length > 1;
+  const hiddenMeanings = word.hiddenMeanings || [];
+  const visibleMeanings = meaningChunks.filter((m) => !hiddenMeanings.includes(m));
+  const displayedTranslation = hasMultipleMeanings
+    ? (visibleMeanings.length > 0 ? visibleMeanings.join(", ") : word.english)
+    : word.english;
+  const toggleMeaning = (m: string) => {
+    if (!onEditWord) return;
+    const next = hiddenMeanings.includes(m)
+      ? hiddenMeanings.filter((x) => x !== m)
+      : [...hiddenMeanings, m];
+    // never allow hiding every meaning
+    if (next.length >= meaningChunks.length) return;
+    onEditWord({ hiddenMeanings: next } as Partial<VocabularyWord>);
+  };
+
+  useEffect(() => { setShowMeanings(false); }, [word.id]);
 
   // Swipe: left = next, right = previous (guarded so it doesn't also flip)
   const handleTouchStart = (e: React.TouchEvent) => {
