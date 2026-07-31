@@ -160,7 +160,7 @@ export function CompactToolbar(props: CompactToolbarProps) {
               className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border-orange-400 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950"
               asChild
             >
-              <label className="cursor-pointer">
+              <label className="cursor-pointer" onClick={pickWithHandles}>
                 <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <input type="file" accept=".xlsx,.xls" multiple className="hidden" onChange={handleFileUpload} />
               </label>
