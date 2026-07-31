@@ -7,7 +7,7 @@ import {
   Quote, MessageSquareText, MessageSquareOff,
   Pause, Play, ArrowUp, ArrowDown, Trash2, Settings2, List,
   Save, Sparkles, Loader2, ChevronDown,
-  EyeOff, Pencil, ListChecks,
+  EyeOff, Pencil, ListChecks, Layers,
 } from "lucide-react";
 import {
   VocabularyWord, AutoplayMode,
