@@ -163,6 +163,17 @@ export function FlashcardView(props: FlashcardViewProps) {
   const backSel = useMeaningSelection(word.id, translationLabel, backMeanings);
   const displayedFront = hasMultipleFront ? joinMeanings(frontSel.selected) : word.chinese;
   const displayedTranslation = hasMultipleBack ? joinMeanings(backSel.selected) : word.english;
+  // Keep the transcription in sync with the selected meanings (hidden meaning → hidden transcription)
+  const displayedPinyin = React.useMemo(() => {
+    if (!word.pinyin) return "";
+    if (!hasMultipleFront) return word.pinyin;
+    const parts = splitMeanings(word.pinyin);
+    if (parts.length !== frontMeanings.length) return word.pinyin;
+    const kept = frontMeanings
+      .map((m, i) => (frontSel.selected.includes(m) ? parts[i] : null))
+      .filter((p): p is string => !!p);
+    return kept.length ? joinMeanings(kept) : word.pinyin;
+  }, [word.pinyin, hasMultipleFront, frontMeanings, frontSel.selected]);
   const isRtl = (label: string) =>
     !!LANGUAGES.find((l) => l.name === label || l.native === label || l.short === label)?.rtl;
 
