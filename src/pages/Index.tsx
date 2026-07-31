@@ -9,6 +9,7 @@ import { useAudio } from "@/hooks/useAudio";
 import { useStudySession } from "@/hooks/useStudySession";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { previewExcelFile, buildWordsFromMapping, type SheetPreview } from "@/utils/excelParser";
+import { parseSenseWorkbook } from "@/utils/senseWorkbook";
 import { ColumnMappingDialog } from "@/components/ColumnMappingDialog";
 import { useToast } from "@/hooks/use-toast";
 import { CustomSequenceStep } from "@/types/vocabulary";
