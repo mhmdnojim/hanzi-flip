@@ -324,7 +324,8 @@ export function FlashcardView(props: FlashcardViewProps) {
     onCustomSequenceChange(customSequence.filter((_, idx) => idx !== i));
   };
   const addStep = (track: CustomSequenceTrack) => {
-    onCustomSequenceChange([...customSequence, { track, repeat: 1 }]);
+    // Front/study language defaults to 5 repeats, other tracks to 1
+    onCustomSequenceChange([...customSequence, { track, repeat: track === 'original' ? 5 : 1 }]);
   };
 
   const exampleSentence = word.exampleSentence;
