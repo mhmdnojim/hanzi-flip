@@ -62,7 +62,7 @@ export function setMeaningSelection(vocabId: string, lang: string, meanings: str
 const getSnapshot = () => store;
 const getServerSnapshot = () => store;
 
-/** Meanings currently chosen for a card side, falling back to all of them */
+/** Meanings currently chosen for a card side, defaulting to the first one only */
 export function useMeaningSelection(vocabId: string, lang: string, meanings: string[]) {
   const state = React.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const saved = state[selectionKey(vocabId, lang)];
@@ -70,7 +70,7 @@ export function useMeaningSelection(vocabId: string, lang: string, meanings: str
   const selected = React.useMemo(() => {
     if (meanings.length <= 1) return meanings;
     const kept = (saved ?? []).filter((m) => meanings.includes(m));
-    return kept.length ? kept : meanings;
+    return kept.length ? kept : meanings.slice(0, 1);
   }, [saved, meanings]);
 
   const setSelected = React.useCallback(
