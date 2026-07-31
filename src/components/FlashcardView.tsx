@@ -486,10 +486,42 @@ export function FlashcardView(props: FlashcardViewProps) {
                       {word.pinyin}
                     </motion.p>
                   )}
-                  <p className="font-chinese text-white font-bold leading-tight"
-                    style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}>
-                    {word.chinese}
-                  </p>
+                  {editingField === "chinese" ? (
+                    <input
+                      autoFocus
+                      value={editDraft}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      onBlur={commitEdit}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") commitEdit();
+                        if (e.key === "Escape") setEditingField(null);
+                      }}
+                      className="font-chinese font-bold leading-tight px-4 text-center bg-white/15 rounded-xl border border-white/30 outline-none text-white w-full"
+                      style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}
+                    />
+                  ) : (
+                    <div className="flex items-start justify-center gap-2">
+                      <p className="font-chinese text-white font-bold leading-tight"
+                        style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}>
+                        {word.chinese}
+                      </p>
+                      {onEditWord && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); startEdit("chinese", word.chinese); }}
+                              className="mt-1 shrink-0 p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Edit {originalLabel}</p></TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  )}
                   {word.explanation && (
                     <p className="text-xs sm:text-sm text-white/70 max-w-md text-center mt-1">{word.explanation}</p>
                   )}
