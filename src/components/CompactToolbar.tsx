@@ -241,7 +241,7 @@ export function CompactToolbar(props: CompactToolbarProps) {
                 >
                   <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline text-[10px] uppercase opacity-70">Back</span>
-                  {props.showChineseFirst ? studyLanguage.short : translationLanguage.short}
+                  {translationLanguage.short}
                   <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
