@@ -316,7 +316,7 @@ const Index = () => {
           toast({
             title: `Imported “${sense.filename}” (sense format)`,
             description: s
-              ? `${s.senses} senses from ${s.sourceRows} words · ${s.reverseEntries} reverse entries · ${s.targetSenses} target senses (${s.targetOnly} target-only) · ${s.needsReview} need review`
+              ? `${s.senses} senses from ${s.sourceRows} words · ${s.concepts} concepts · ${s.reverseEntries} reverse entries · ${s.targetSenses} lexemes (${s.targetOnly} target-only) · ${s.needsReview} need review`
               : `${sense.words.length} senses`,
             duration: 5000,
           });
