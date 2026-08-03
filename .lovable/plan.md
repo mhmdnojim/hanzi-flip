@@ -1,52 +1,49 @@
-## The real problem
+## Goal
 
-Your sheet has **one row per Chinese word**, and every other language column holds *all* translations of that word crammed into one cell. When you switch the front language to, say, Indonesian, the app has no way to know which of those comma-separated meanings belongs to which sense of the Chinese word — so unrelated synonyms show up on both sides. Ticking meanings card by card is patching symptoms.
+Today a card is one *Chinese* sense. When a target language goes on the front, the card is clean only if that target word happens to map to exactly one Chinese sense. Target words that carry meanings with no Chinese anchor in the sheet are invisible, and target words spanning several Chinese senses are only distinguishable by their Chinese back side.
 
-The fix is structural: **one row = one meaning (one sense)**, not one row = one word.
+Fix: give the target languages their own sense identity in the workbook, then let the importer read it.
 
-## Target file structure
+## Part 1 — Workbook format extension
 
-Instead of:
+Add three columns to **Reverse Index** (existing columns unchanged, so old workbooks still import):
+
+| Column | Meaning |
+| --- | --- |
+| `Target Sense ID` | Stable per (language, main entry, meaning), e.g. `ES-tiempo-S02` |
+| `Target Sense Gloss` | Short English gloss of *that target word's own* meaning |
+| `Target Sense Note` | Optional disambiguator shown on the card (`(time, duration)`) |
+
+Add one new sheet, **Target Sense Map**, listing every sense of every target word — including meanings with no Chinese counterpart:
 
 ```text
-Chinese | Pinyin | English                        | Indonesian
-吧      | ba     | particle for polite suggestion, bar | partikel saran, bar
+Language | Main Entry | Latin | Target Sense ID | Target Sense Gloss | Linked Sense IDs | Coverage
+Spanish  | tiempo     |       | ES-tiempo-S01   | time, duration     | HSK1-W0012-S01   | linked
+Spanish  | tiempo     |       | ES-tiempo-S02   | weather            |                  | unlinked
 ```
 
-Split into sense rows:
+`Coverage` is `linked` (has at least one Chinese sense) or `unlinked` (target-only meaning). `Linked Sense IDs` is a `|`-separated list, so a target sense that legitimately covers several Chinese senses stays one card.
 
-```text
-SenseID | Chinese | Pinyin | English                       | EN_Latin | Indonesian      | ID_Latin
-吧-1    | 吧      | ba     | particle for polite suggestion | —        | partikel saran  | —
-吧-2    | 吧      | ba     | bar (drinking place)           | —        | bar             | —
-```
+## Part 2 — Importer changes (`src/utils/senseWorkbook.ts`)
 
-Rules for the cleaned file:
-- Every language column contains **exactly one meaning** — no commas, semicolons, slashes.
-- Each Latin/transliteration column sits immediately right of its language column and matches that single meaning.
-- A `SenseID` column (`word-1`, `word-2`) keeps the senses of one word grouped and makes re-imports stable.
-- Keep an optional `SenseNote` column (short English gloss) so you can tell senses apart at a glance while reviewing.
+- Detect and read `Target Sense Map` when present; fall back to current behaviour when absent.
+- Build the deck as before (one card per Chinese sense) **plus** an index keyed by target sense.
+- When the front language is a target language, the card is chosen by `Target Sense ID`, not by Chinese row: back side = merged Chinese senses in `Linked Sense IDs` (commas kept, per your choice), disambiguator = `Target Sense Note`.
+- `unlinked` target senses become cards with an empty Chinese side, tagged `Target-only` in `extraColumns` so they are visible and filterable rather than silently dropped.
+- Latin transliteration continues to follow the entry, aligned per meaning as it is now.
 
-With that structure, whichever language you pick as the front language, the row already *is* one clean pair — no meaning checklist needed, no cross-language mismatch.
+## Part 3 — App surface (minimal)
 
-## How I'd do the conversion
+- Card shows the sense note under the front word when present (no layout shift, same absolute positioning already used).
+- Word list filter gains `Target-only` and `Needs review` toggles, reusing the existing filter chips.
+- Import summary reports: Chinese senses, target senses, linked, target-only.
 
-1. You upload the current `.xlsx` here.
-2. I run a one-off script that, for each row, splits the anchor column (the language you're studying — the front language) into its separate meanings, then asks the AI to redistribute every other language's meanings onto the correct sense row, using the anchor meaning plus the Chinese/English gloss as context.
-3. Meanings the AI can't confidently attach to a sense are not deleted — they go into a `Unmatched` column at the far right so nothing is lost.
-4. Transliteration columns are re-split and re-aligned to their sense.
-5. I return a cleaned `.xlsx` plus a short report: rows in, sense rows out, how many cells were auto-split, how many landed in `Unmatched`.
+## Part 4 — Workbook generation
 
-Fixes are applied automatically; you review afterwards by scanning the `Unmatched` column and the `SenseNote` column rather than card by card.
+You regenerate HSK1–6 with the new columns. I'll provide a standalone script (`tools/add_target_senses.py`) that takes an existing workbook and produces the `Target Sense Map` sheet by grouping the Reverse Index by (Language, Main Entry) and assigning `Target Sense IDs` from the distinct Chinese senses it already links to. That gives you `linked` rows automatically; `unlinked` target-only meanings are appended manually or by a later AI pass.
 
-## Note on anchor choice
+## Technical notes
 
-You chose "anchor = current front language". Practically that means the cleaned file is optimal for one study direction at a time. If you later switch front language, the sense rows still hold — they only need re-splitting if the *new* front language had meanings that the anchor collapsed together. I'll flag those rows in the report so a second pass is cheap.
-
-## What is not in scope
-
-No changes to the app itself — no new AI cleanup button, no new schema, no backend work. This is a file-reorganization deliverable.
-
-## To start
-
-Upload the Excel file and tell me which language column should be the anchor for this pass (default: Chinese if you don't say otherwise).
+- No database or backend work; everything is client-side parsing plus the Python helper.
+- Backwards compatible: workbooks without `Target Sense Map` import exactly as they do today.
+- Sense IDs are stable strings, so per-word state (favorites, hidden meanings, scores) keyed by them survives re-import.
