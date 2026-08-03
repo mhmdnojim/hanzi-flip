@@ -74,6 +74,7 @@ export function useVocabulary() {
       chinese: values[activeStudyLang] ?? "",
       pinyin: (transcriptionLang && values[transcriptionLang]) || "",
       english: values[activeTranslationLang] ?? "",
+      senseNote: w.senseNotes?.[activeStudyLang],
     };
   });
 
