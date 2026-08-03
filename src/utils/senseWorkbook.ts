@@ -5,6 +5,9 @@
 //   Sense Map      Sense ID | Source Row | Chinese | Pinyin | English Sense | Sense Status
 //   Reverse Index  Language | Main Entry | Latin | English Meaning | Chinese | Pinyin |
 //                  Sense ID | Mapping Class | Review Priority | Example Reference
+//   Target Sense Map (optional)
+//                  Language | Main Entry | Latin | Target Sense ID | Target Sense Gloss |
+//                  Target Sense Note | Linked Sense IDs | Coverage
 //
 // One deck row = one SENSE, not one word: whichever language is put on the front,
 // the card already is a clean one-meaning pair.
@@ -25,6 +28,8 @@ export interface SenseImportResult {
     ambiguousSkipped: number;
     needsReview: number;
     reverseEntries: number;
+    targetSenses: number;
+    targetOnly: number;
   };
 }
 
@@ -32,6 +37,7 @@ type Row = Record<string, string>;
 
 const SENSE_SHEET = "sense map";
 const REVERSE_SHEET = "reverse index";
+const TARGET_SHEET = "target sense map";
 
 const norm = (v: unknown) => String(v ?? "").trim();
 
