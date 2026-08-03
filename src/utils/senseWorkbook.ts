@@ -5,6 +5,9 @@
 //   Sense Map      Sense ID | Source Row | Chinese | Pinyin | English Sense | Sense Status
 //   Reverse Index  Language | Main Entry | Latin | English Meaning | Chinese | Pinyin |
 //                  Sense ID | Mapping Class | Review Priority | Example Reference
+//   Target Sense Map (optional)
+//                  Language | Main Entry | Latin | Target Sense ID | Target Sense Gloss |
+//                  Target Sense Note | Linked Sense IDs | Coverage
 //
 // One deck row = one SENSE, not one word: whichever language is put on the front,
 // the card already is a clean one-meaning pair.
@@ -25,6 +28,8 @@ export interface SenseImportResult {
     ambiguousSkipped: number;
     needsReview: number;
     reverseEntries: number;
+    targetSenses: number;
+    targetOnly: number;
   };
 }
 
@@ -32,6 +37,7 @@ type Row = Record<string, string>;
 
 const SENSE_SHEET = "sense map";
 const REVERSE_SHEET = "reverse index";
+const TARGET_SHEET = "target sense map";
 
 const norm = (v: unknown) => String(v ?? "").trim();
 
@@ -88,6 +94,55 @@ export async function parseSenseWorkbook(file: File): Promise<SenseImportResult>
   const senseRows = readSheet(book, senseName);
   const reverseRows = readSheet(book, reverseName);
   if (!senseRows.length) return fail("The “Sense Map” sheet is empty.");
+
+  // ── Optional target-side sense map ────────────────────────────────────────
+  // Gives every target-language word its own sense identity, so a target word
+  // that carries several meanings still yields one clean card per meaning.
+  interface TargetSense {
+    code: string;
+    latinCode: string | null;
+    entry: string;
+    latin: string;
+    id: string;
+    gloss: string;
+    note: string;
+    linked: string[];
+  }
+  const targetName = findSheet(book, TARGET_SHEET);
+  const targetSenses: TargetSense[] = [];
+  if (targetName) {
+    for (const r of readSheet(book, targetName)) {
+      const entry = cleanSense(r["Main Entry"]);
+      const { code, latin } = codesForLanguage(norm(r["Language"]));
+      if (!entry || !code) continue;
+      const linked = norm(r["Linked Sense IDs"])
+        .split(/\s*[|;,]\s*/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const coverage = norm(r["Coverage"]).toLowerCase();
+      targetSenses.push({
+        code,
+        latinCode: latin,
+        entry,
+        latin: cleanSense(r["Latin"]),
+        id: norm(r["Target Sense ID"]),
+        gloss: cleanSense(r["Target Sense Gloss"]),
+        note: norm(r["Target Sense Note"]),
+        linked: coverage === "unlinked" ? [] : linked,
+      });
+    }
+  }
+  // Chinese Sense ID -> language code -> target senses attached to it
+  const targetsBySense = new Map<string, Map<string, TargetSense[]>>();
+  for (const t of targetSenses) {
+    for (const senseId of t.linked) {
+      const byLang = targetsBySense.get(senseId) ?? new Map<string, TargetSense[]>();
+      const list = byLang.get(t.code) ?? [];
+      list.push(t);
+      byLang.set(t.code, list);
+      targetsBySense.set(senseId, byLang);
+    }
+  }
 
   // Main vocabulary sheet: first sheet that isn't one of the meta sheets.
   const meta = new Set([senseName, reverseName, ...book.SheetNames.filter((s) => /^sources$/i.test(s.trim()))]);
@@ -201,6 +256,34 @@ export async function parseSenseWorkbook(file: File): Promise<SenseImportResult>
         }
       }
 
+      // Target-side senses win over the plain reverse-index merge: they know which
+      // meaning of the target word this card is about.
+      const senseNotes: Record<string, string> = {};
+      for (const [code, list] of targetsBySense.get(senseId) ?? []) {
+        const entries: string[] = [];
+        const latins: string[] = [];
+        const notes: string[] = [];
+        for (const t of list) {
+          if (t.entry && !entries.includes(t.entry)) {
+            entries.push(t.entry);
+            latins.push(t.latin);
+            if (t.note || t.gloss) notes.push(t.note || t.gloss);
+          }
+        }
+        if (!entries.length) continue;
+        const text = entries.join(", ");
+        values[code] = text;
+        languages.add(code);
+        const latinCode = list[0].latinCode;
+        const latinText = latins.join(", ").trim();
+        if (latinCode && latinText.replace(/[,\s]/g, "") && latinText !== text) {
+          values[latinCode] = latinText;
+          languages.add(latinCode);
+        }
+        const note = [...new Set(notes)].join("; ");
+        if (note) senseNotes[code] = note;
+      }
+
       if (Object.keys(values).length === 0) continue;
       if (review) needsReview += 1;
 
@@ -227,11 +310,48 @@ export async function parseSenseWorkbook(file: File): Promise<SenseImportResult>
         english,
         exampleSentence,
         extraColumns,
+        senseNotes: Object.keys(senseNotes).length ? senseNotes : undefined,
         favorite: false,
         correctCount: 0,
         incorrectCount: 0,
       });
     }
+  }
+
+  // ── Target-only senses ────────────────────────────────────────────────────
+  // Meanings of a target word with no counterpart in the source vocabulary: kept
+  // as cards with an empty source side so they stay visible and filterable.
+  let targetOnly = 0;
+  for (const t of targetSenses) {
+    if (t.linked.length) continue;
+    const values: Record<string, string> = { [t.code]: t.entry };
+    languages.add(t.code);
+    if (t.latinCode && t.latin && t.latin !== t.entry) {
+      values[t.latinCode] = t.latin;
+      languages.add(t.latinCode);
+    }
+    if (t.gloss) {
+      values["en"] = t.gloss;
+      languages.add("en");
+    }
+    targetOnly += 1;
+    words.push({
+      id: `target_${stamp}_${t.id || `${t.code}_${targetOnly}`}`,
+      values,
+      chinese: t.entry,
+      pinyin: t.latin,
+      english: t.gloss,
+      targetOnly: true,
+      senseNotes: t.note ? { [t.code]: t.note } : undefined,
+      extraColumns: {
+        "Target Sense ID": t.id,
+        "Target-only": "Yes",
+        ...(t.note ? { "Sense Note": t.note } : {}),
+      },
+      favorite: false,
+      correctCount: 0,
+      incorrectCount: 0,
+    });
   }
 
   if (!words.length) return fail("No senses could be built from this workbook.");
@@ -250,6 +370,8 @@ export async function parseSenseWorkbook(file: File): Promise<SenseImportResult>
       ambiguousSkipped,
       needsReview,
       reverseEntries: reverseRows.length,
+      targetSenses: targetSenses.length,
+      targetOnly,
     },
   };
 }

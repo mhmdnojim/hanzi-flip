@@ -168,6 +168,8 @@ export function WordListPanel({
   const [charTypeFilters, setCharTypeFilters] = useState<Set<CharTypeFilter>>(new Set(loaded?.charTypeFilters ?? []));
   const [posFilters, setPosFilters] = useState<Set<POSFilter>>(new Set(loaded?.posFilters ?? []));
   const [topicFilters, setTopicFilters] = useState<Set<TopicFilter>>(new Set(loaded?.topicFilters ?? []));
+  type SenseFilter = "target-only" | "needs-review";
+  const [senseFilters, setSenseFilters] = useState<Set<SenseFilter>>(new Set());
 
   useEffect(() => {
     try {
@@ -245,8 +247,16 @@ export function WordListPanel({
       const cls = classifications.get(w.id);
       if (cls && !topicFilters.has(normalizeTopic(cls.topic))) return false;
     }
+    if (senseFilters.size > 0) {
+      const isTargetOnly = Boolean(w.targetOnly);
+      const needsReview = Boolean(w.extraColumns?.["Review"]);
+      const matches =
+        (senseFilters.has("target-only") && isTargetOnly) ||
+        (senseFilters.has("needs-review") && needsReview);
+      if (!matches) return false;
+    }
     return true;
-  }, [languageFilter, categoryFilters, hskFilters, frequencyFilters, charTypeFilters, posFilters, topicFilters, classifications]);
+  }, [languageFilter, categoryFilters, hskFilters, frequencyFilters, charTypeFilters, posFilters, topicFilters, senseFilters, classifications]);
 
   // Visible list = search filter only (filters auto-select instead of hiding)
   const filteredWords = useMemo(() => {
@@ -383,6 +393,19 @@ export function WordListPanel({
               </FilterRow>
 
               {/* HSK Level */}
+              {/* Senses */}
+              <FilterRow label="Senses"
+                allValues={["target-only", "needs-review"]}
+                activeValues={senseFilters}
+                onToggleAll={(all) => setSenseFilters(all ? new Set(["target-only", "needs-review"] as SenseFilter[]) : new Set())}>
+                <FilterPill active={senseFilters.has("target-only")} onClick={() => toggleInSet(setSenseFilters, "target-only" as SenseFilter)}>
+                  Target-only ({allWords.filter((w) => w.targetOnly).length})
+                </FilterPill>
+                <FilterPill active={senseFilters.has("needs-review")} onClick={() => toggleInSet(setSenseFilters, "needs-review" as SenseFilter)}>
+                  Needs review ({allWords.filter((w) => w.extraColumns?.["Review"]).length})
+                </FilterPill>
+              </FilterRow>
+
               <FilterRow label="HSK Level"
                 allValues={[1, 2, 3, 4, 5, 6]}
                 activeValues={hskFilters}
