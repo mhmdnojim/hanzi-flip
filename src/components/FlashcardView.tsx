@@ -539,9 +539,11 @@ export function FlashcardView(props: FlashcardViewProps) {
                         {displayedFront}
                       </p>
                       {/* Sense note floats below so it never shifts the word */}
-                      {word.senseNote && (
+                      {(word.senseNote || word.senseCount) && (
                         <p className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap text-xs sm:text-sm text-white/70 italic pointer-events-none">
-                          ({word.senseNote})
+                          {word.senseCount ? `${word.senseIndex}/${word.senseCount}` : ""}
+                          {word.senseCount && word.senseNote ? " · " : ""}
+                          {word.senseNote ? `(${word.senseNote})` : ""}
                         </p>
                       )}
                       <div className="flex flex-col gap-1.5 mt-1 shrink-0">

@@ -29,6 +29,19 @@ export interface VocabularyWord {
   senseNote?: string;
   /** Card built from a target-language sense that has no anchor in the source language */
   targetOnly?: boolean;
+  /** Language-neutral meaning identifier shared by every language on this card */
+  conceptId?: string;
+  /** One written word in one language: language code -> Lexeme ID */
+  lexemeIds?: Record<string, string>;
+  /** One specific meaning of that word: language code -> Target Sense ID */
+  targetSenseIds?: Record<string, string>;
+  /** Position of this meaning inside its lexeme, per language code (1-based) */
+  senseIndexes?: Record<string, { index: number; total: number }>;
+  /** Numbered meaning for the active study language, filled in when projecting */
+  senseIndex?: number;
+  senseCount?: number;
+  /** Flagged by the workbook as needing human review */
+  needsReview?: boolean;
 }
 
 export interface VocabularyDeck {
