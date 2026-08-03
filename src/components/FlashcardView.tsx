@@ -538,6 +538,12 @@ export function FlashcardView(props: FlashcardViewProps) {
                         style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}>
                         {displayedFront}
                       </p>
+                      {/* Sense note floats below so it never shifts the word */}
+                      {word.senseNote && (
+                        <p className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap text-xs sm:text-sm text-white/70 italic pointer-events-none">
+                          ({word.senseNote})
+                        </p>
+                      )}
                       <div className="flex flex-col gap-1.5 mt-1 shrink-0">
                         {onEditWord && (
                           <Tooltip>
