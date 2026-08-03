@@ -393,6 +393,19 @@ export function WordListPanel({
               </FilterRow>
 
               {/* HSK Level */}
+              {/* Senses */}
+              <FilterRow label="Senses"
+                allValues={["target-only", "needs-review"]}
+                activeValues={senseFilters}
+                onToggleAll={(all) => setSenseFilters(all ? new Set(["target-only", "needs-review"] as SenseFilter[]) : new Set())}>
+                <FilterPill active={senseFilters.has("target-only")} onClick={() => toggleInSet(setSenseFilters, "target-only" as SenseFilter)}>
+                  Target-only ({allWords.filter((w) => w.targetOnly).length})
+                </FilterPill>
+                <FilterPill active={senseFilters.has("needs-review")} onClick={() => toggleInSet(setSenseFilters, "needs-review" as SenseFilter)}>
+                  Needs review ({allWords.filter((w) => w.extraColumns?.["Review"]).length})
+                </FilterPill>
+              </FilterRow>
+
               <FilterRow label="HSK Level"
                 allValues={[1, 2, 3, 4, 5, 6]}
                 activeValues={hskFilters}
