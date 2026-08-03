@@ -23,6 +23,12 @@ export interface VocabularyWord {
   extraColumns?: Record<string, string>;
   /** Meanings (comma-separated chunks of the translation) the user unchecked — hidden on the card */
   hiddenMeanings?: string[];
+  /** Per-language disambiguating note for this sense (language code -> note) */
+  senseNotes?: Record<string, string>;
+  /** Note for the currently selected study language (filled in when projecting) */
+  senseNote?: string;
+  /** Card built from a target-language sense that has no anchor in the source language */
+  targetOnly?: boolean;
 }
 
 export interface VocabularyDeck {
