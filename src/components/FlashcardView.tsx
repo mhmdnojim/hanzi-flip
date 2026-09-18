@@ -742,12 +742,12 @@ export function FlashcardView(props: FlashcardViewProps) {
                   </Tooltip>
 
                   {/* Show extra columns on the back */}
-                  {word.extraColumns && Object.keys(word.extraColumns).length > 0 && (
-                    <div className="mt-4 max-w-[90%] sm:max-w-[80%] space-y-1.5 text-left" onClick={(e) => e.stopPropagation()}>
-                      {Object.entries(word.extraColumns).map(([k, v]) => (
-                        <div key={k} className="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/20">
-                          <span className="text-[10px] uppercase tracking-wider text-white/60">{k}</span>
-                          <p className="text-xs sm:text-sm text-white/90">{v}</p>
+                  {visibleExtraColumns(word.extraColumns).length > 0 && (
+                    <div className="mt-4 max-w-[90%] sm:max-w-[80%] flex flex-wrap justify-center gap-1.5 text-left" onClick={(e) => e.stopPropagation()}>
+                      {visibleExtraColumns(word.extraColumns).map(([k, v]) => (
+                        <div key={k} className="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/20 flex items-baseline gap-2 whitespace-nowrap">
+                          <span className="text-[10px] uppercase tracking-wider text-white/60 whitespace-nowrap">{k}</span>
+                          <span className="text-xs sm:text-sm text-white/90 whitespace-nowrap">{v}</span>
                         </div>
                       ))}
                     </div>
