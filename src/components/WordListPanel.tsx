@@ -170,6 +170,15 @@ export function WordListPanel({
   const [topicFilters, setTopicFilters] = useState<Set<TopicFilter>>(new Set(loaded?.topicFilters ?? []));
   type SenseFilter = "target-only" | "needs-review";
   const [senseFilters, setSenseFilters] = useState<Set<SenseFilter>>(new Set());
+  const [expandedLatin, setExpandedLatin] = useState<Set<string>>(new Set());
+
+  const toggleLatin = (id: string) => {
+    setExpandedLatin((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     try {
@@ -515,10 +524,25 @@ export function WordListPanel({
                       {cls && <Badge variant="outline" className="text-[8px] px-1 py-0 border-muted-foreground/30 text-muted-foreground">{cls.pos}</Badge>}
                     </div>
                     <div className="flex items-center gap-2 ml-7">
-                      {w.pinyin && <span className="text-muted-foreground" style={{ fontSize: fontSize * 0.8 }}>{w.pinyin}</span>}
                       <span className="text-muted-foreground truncate" style={{ fontSize: fontSize * 0.8 }}>{w.english}</span>
                     </div>
+                    {w.pinyin && expandedLatin.has(w.id) && (
+                      <div className="flex items-center gap-2 ml-7">
+                        <span className="text-muted-foreground italic" style={{ fontSize: fontSize * 0.8 }}>{w.pinyin}</span>
+                      </div>
+                    )}
                   </button>
+                  {w.pinyin && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 shrink-0 text-muted-foreground"
+                      title={expandedLatin.has(w.id) ? "Hide Latin" : "Show Latin"}
+                      onClick={(e) => { e.stopPropagation(); toggleLatin(w.id); }}
+                    >
+                      {expandedLatin.has(w.id) ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </Button>
+                  )}
                 </div>
               );
             })}
