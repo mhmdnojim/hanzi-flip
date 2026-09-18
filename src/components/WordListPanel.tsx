@@ -507,45 +507,71 @@ export function WordListPanel({
               const globalIndex = allWords.indexOf(w);
               const hskLevel = getHSKLevel(w.chinese);
               const cls = classifications.get(w.id);
+              const expanded = expandedIds.has(w.id);
+
+              const frontLang = getLanguage(studyLang);
+              const backLang = getLanguage(translationLang);
+              const frontTranscriptionCode = romanizationCodeFor(studyLang);
+              const backTranscriptionCode = romanizationCodeFor(translationLang);
+              const frontLatin = w.pinyin || (frontTranscriptionCode && w.values?.[frontTranscriptionCode]) || "";
+              const backLatin = (backTranscriptionCode && w.values?.[backTranscriptionCode]) || "";
+              const frontLatinLabel = frontLang.romanizationLabel || "Latin";
+              const backLatinLabel = backLang.romanizationLabel || "Latin";
+
               return (
                 <div
                   key={w.id}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-accent/50 transition-colors ${w.id === currentWordId ? "bg-accent/40" : ""}`}
+                  className={`rounded-md hover:bg-accent/50 transition-colors ${w.id === currentWordId ? "bg-accent/40" : ""}`}
                 >
-                  <Checkbox checked={isActive} onCheckedChange={() => handleToggle(w.id)} />
-                  <button
-                    type="button"
-                    className="flex-1 min-w-0 text-left"
-                    onClick={() => isActive && onJumpTo?.(w.id)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground shrink-0" style={{ fontSize: fontSize * 0.75 }}>{globalIndex + 1}</span>
-                      <span className="font-medium truncate" style={{ fontSize }}>{w.chinese}</span>
-                      {w.isIdiom && <Badge variant="secondary" className="text-[8px] px-1 py-0">Idiom</Badge>}
-                      {w.isPhrasalVerb && <Badge variant="secondary" className="text-[8px] px-1 py-0">Phrasal</Badge>}
-                      {w.isCollocation && <Badge variant="secondary" className="text-[8px] px-1 py-0">Colloc.</Badge>}
-                      {hskLevel && <Badge variant="outline" className="text-[8px] px-1 py-0 border-primary/40 text-primary">HSK{hskLevel}</Badge>}
-                      {cls && <Badge variant="outline" className="text-[8px] px-1 py-0 border-muted-foreground/30 text-muted-foreground">{cls.pos}</Badge>}
-                    </div>
-                    <div className="flex items-center gap-2 ml-7">
-                      <span className="text-muted-foreground truncate" style={{ fontSize: fontSize * 0.8 }}>{w.english}</span>
-                    </div>
-                    {w.pinyin && expandedLatin.has(w.id) && (
-                      <div className="flex items-center gap-2 ml-7">
-                        <span className="text-muted-foreground italic" style={{ fontSize: fontSize * 0.8 }}>{w.pinyin}</span>
+                  <div className="flex items-center gap-2.5 px-3 py-2">
+                    <Checkbox checked={isActive} onCheckedChange={() => handleToggle(w.id)} />
+                    <button
+                      type="button"
+                      className="flex-1 min-w-0 text-left"
+                      onClick={() => toggleExpanded(w.id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground shrink-0" style={{ fontSize: fontSize * 0.75 }}>{globalIndex + 1}</span>
+                        <span className="font-medium truncate" style={{ fontSize }}>{w.chinese}</span>
+                        {w.isIdiom && <Badge variant="secondary" className="text-[8px] px-1 py-0">Idiom</Badge>}
+                        {w.isPhrasalVerb && <Badge variant="secondary" className="text-[8px] px-1 py-0">Phrasal</Badge>}
+                        {w.isCollocation && <Badge variant="secondary" className="text-[8px] px-1 py-0">Colloc.</Badge>}
+                        {hskLevel && <Badge variant="outline" className="text-[8px] px-1 py-0 border-primary/40 text-primary">HSK{hskLevel}</Badge>}
+                        {cls && <Badge variant="outline" className="text-[8px] px-1 py-0 border-muted-foreground/30 text-muted-foreground">{cls.pos}</Badge>}
                       </div>
-                    )}
-                  </button>
-                  {w.pinyin && (
+                      <div className="flex items-center gap-2 ml-7">
+                        <span className="text-muted-foreground truncate" style={{ fontSize: fontSize * 0.8 }}>{w.english}</span>
+                      </div>
+                    </button>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 shrink-0 text-muted-foreground"
-                      title={expandedLatin.has(w.id) ? "Hide Latin" : "Show Latin"}
-                      onClick={(e) => { e.stopPropagation(); toggleLatin(w.id); }}
+                      title="Go to word"
+                      disabled={!isActive}
+                      onClick={(e) => { e.stopPropagation(); onJumpTo?.(w.id); }}
                     >
-                      {expandedLatin.has(w.id) ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                      <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
+                  </div>
+
+                  {expanded && (
+                    <div className="px-3 pb-2 ml-7 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[11px] leading-tight">
+                      {frontLatin && (
+                        <>
+                          <span className="text-muted-foreground whitespace-nowrap">{frontLatinLabel}:</span>
+                          <span className="text-foreground italic whitespace-nowrap overflow-hidden text-ellipsis">{frontLatin}</span>
+                        </>
+                      )}
+                      <span className="text-muted-foreground whitespace-nowrap">Translation:</span>
+                      <span className="text-foreground whitespace-nowrap overflow-hidden text-ellipsis">{w.english}</span>
+                      {backLatin && (
+                        <>
+                          <span className="text-muted-foreground whitespace-nowrap">{backLatinLabel} translation:</span>
+                          <span className="text-foreground italic whitespace-nowrap overflow-hidden text-ellipsis">{backLatin}</span>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               );
