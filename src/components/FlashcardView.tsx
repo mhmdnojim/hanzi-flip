@@ -1324,4 +1324,4 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
       )}
     </TooltipProvider>
   );
-}
+});
