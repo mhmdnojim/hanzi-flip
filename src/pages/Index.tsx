@@ -703,6 +703,15 @@ const Index = () => {
         onConfirm={handleConfirmMapping}
         onCancel={() => setPreviewQueue((prev) => prev.slice(1))}
       />
+
+      <TopicDeckDialog
+        open={topicDialogOpen}
+        onOpenChange={setTopicDialogOpen}
+        frontLanguageName={getLanguage(vocabulary.studyLang).name}
+        backLanguageName={getLanguage(vocabulary.translationLang).name}
+        generating={generatingTopic}
+        onGenerate={handleGenerateTopicDeck}
+      />
     </div>
   );
 };
