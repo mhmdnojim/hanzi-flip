@@ -150,6 +150,7 @@ export function FlashcardView(props: FlashcardViewProps) {
   const [pausedMode, setPausedMode] = useState<AutoplayMode | null>(null);
   const [editingField, setEditingField] = useState<"english" | "chinese" | "exampleTranslation" | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [editLatinDraft, setEditLatinDraft] = useState("");
   const [meaningsSide, setMeaningsSide] = useState<"front" | "back" | null>(null);
   const [meaningsAnchor, setMeaningsAnchor] = useState<DOMRect | null>(null);
   const frontWordRef = useRef<HTMLParagraphElement>(null);
