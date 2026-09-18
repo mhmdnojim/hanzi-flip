@@ -8,7 +8,6 @@ import {
   Pause, Play, ArrowUp, ArrowDown, Trash2, Settings2, List,
   Save, Sparkles, Loader2, ChevronDown,
   EyeOff, Pencil, ListChecks, Layers,
-  Type as TypeIcon,
 } from "lucide-react";
 import {
   VocabularyWord, AutoplayMode,
