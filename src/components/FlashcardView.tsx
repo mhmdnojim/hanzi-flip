@@ -110,7 +110,11 @@ interface FlashcardViewProps {
   onEditWord?: (patch: Partial<VocabularyWord>) => void;
 }
 
-export function FlashcardView(props: FlashcardViewProps) {
+export interface FlashcardViewHandle {
+  startEditCurrentWord: () => void;
+}
+
+export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>(function FlashcardView(props, ref) {
   const {
     word, isFlipped, onFlip, onNext, onPrevious, onToggleFavorite,
     showPinyin, onTogglePinyin, showChineseFirst, fontSize, onFontSizeChange,
