@@ -124,20 +124,29 @@ export function CompactToolbar(props: CompactToolbarProps) {
   const canDelete = props.decks.length > 1 || props.currentDeckId !== "sample";
 
   // Which built-in library + level the current deck came from (if any)
+  const TOPICS_LIBRARY_ID = "topics";
+  const isTopicDeck = (d?: VocabularyDeck) => !!d && !d.builtInKey && d.name.startsWith("AI: ");
+  const topicName = (d: VocabularyDeck) => d.name.replace(/^AI:\s*/, "");
+  const topicDecks = props.decks.filter(isTopicDeck);
   const currentDeck = props.decks.find((d) => d.id === props.currentDeckId);
   const [deckLibraryId, activeLevel] = (currentDeck?.builtInKey ?? "").split(":");
   const [pickedLibraryId, setPickedLibraryId] = useState<string | null>(null);
-  const activeLibraryId = pickedLibraryId ?? deckLibraryId ?? null;
+  const activeLibraryId = pickedLibraryId ?? (isTopicDeck(currentDeck) ? TOPICS_LIBRARY_ID : deckLibraryId) ?? null;
+  const isTopicsLibrary = activeLibraryId === TOPICS_LIBRARY_ID;
   const activeLibrary = BUILT_IN_LIBRARIES.find((l) => l.id === activeLibraryId);
   const setLibraryId = (id: string) => {
     setPickedLibraryId(id);
+    if (id === TOPICS_LIBRARY_ID) {
+      if (!isTopicDeck(currentDeck) && topicDecks[0]) props.onDeckChange(topicDecks[0].id);
+      return;
+    }
     const library = BUILT_IN_LIBRARIES.find((l) => l.id === id);
     const currentKey = currentDeck?.builtInKey ?? "";
     if (library && !currentKey.startsWith(`${id}:`)) {
       props.onSelectBuiltIn(id, library.levels[0]);
     }
   };
-  const fileLabel = activeLibrary ? activeLibrary.name : props.deckName;
+  const fileLabel = isTopicsLibrary ? "AI Topics" : activeLibrary ? activeLibrary.name : props.deckName;
 
 
 
@@ -179,11 +188,18 @@ export function CompactToolbar(props: CompactToolbarProps) {
                 <span className="truncate">{library.name}</span>
               </DropdownMenuItem>
             ))}
+            <DropdownMenuItem
+              onClick={() => setLibraryId(TOPICS_LIBRARY_ID)}
+              className={cn("gap-2", isTopicsLibrary && "bg-accent")}
+            >
+              <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+              <span className="truncate">AI Topics</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Level selector for the chosen library */}
-        {activeLibrary && (
+        {/* Level / topic selector for the chosen library */}
+        {(activeLibrary || isTopicsLibrary) && (
           <DropdownMenu>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -193,32 +209,66 @@ export function CompactToolbar(props: CompactToolbarProps) {
                     size="sm"
                     className="h-8 sm:h-9 px-2 sm:px-3 gap-1 text-xs sm:text-sm rounded-full"
                   >
-                    <span className="truncate">{activeLevel ?? "Level"}</span>
+                    <span className="truncate">
+                      {isTopicsLibrary
+                        ? isTopicDeck(currentDeck)
+                          ? topicName(currentDeck)
+                          : "Topics"
+                        : activeLevel ?? "Level"}
+                    </span>
                     <ChevronDown className="w-3 h-3" />
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Select level</p>
+                <p>{isTopicsLibrary ? "Select topic" : "Select level"}</p>
               </TooltipContent>
             </Tooltip>
             <DropdownMenuContent className="max-h-[70vh] overflow-y-auto">
-              {activeLibrary.levels.map((level) => {
-                const key = `${activeLibrary.id}:${level}`;
-                return (
-                  <DropdownMenuItem
-                    key={level}
-                    onClick={() => props.onSelectBuiltIn(activeLibrary.id, level)}
-                    disabled={props.loadingBuiltIn === key}
-                    className={cn("gap-2", level === activeLevel && "bg-accent")}
-                  >
-                    <span className="truncate">{level}</span>
-                    {props.loadingBuiltIn === key && (
-                      <span className="ml-auto text-xs text-muted-foreground">loading…</span>
-                    )}
-                  </DropdownMenuItem>
-                );
-              })}
+              {isTopicsLibrary ? (
+                <>
+                  {props.onCreateTopicDeck && (
+                    <DropdownMenuItem
+                      onClick={props.onCreateTopicDeck}
+                      className="gap-2 text-amber-600 dark:text-amber-400"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">New topic…</span>
+                    </DropdownMenuItem>
+                  )}
+                  {topicDecks.length === 0 && (
+                    <DropdownMenuItem disabled className="text-muted-foreground">
+                      No topic decks yet
+                    </DropdownMenuItem>
+                  )}
+                  {topicDecks.map((deck) => (
+                    <DropdownMenuItem
+                      key={deck.id}
+                      onClick={() => props.onDeckChange(deck.id)}
+                      className={cn("gap-2", deck.id === props.currentDeckId && "bg-accent")}
+                    >
+                      <span className="truncate">{topicName(deck)}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              ) : (
+                activeLibrary!.levels.map((level) => {
+                  const key = `${activeLibrary!.id}:${level}`;
+                  return (
+                    <DropdownMenuItem
+                      key={level}
+                      onClick={() => props.onSelectBuiltIn(activeLibrary!.id, level)}
+                      disabled={props.loadingBuiltIn === key}
+                      className={cn("gap-2", level === activeLevel && "bg-accent")}
+                    >
+                      <span className="truncate">{level}</span>
+                      {props.loadingBuiltIn === key && (
+                        <span className="ml-auto text-xs text-muted-foreground">loading…</span>
+                      )}
+                    </DropdownMenuItem>
+                  );
+                })
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
