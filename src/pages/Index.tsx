@@ -637,6 +637,8 @@ const Index = () => {
         }}
         currentWordId={activeWord?.id}
         onJumpTo={handleJumpTo}
+        studyLang={vocabulary.studyLang}
+        translationLang={vocabulary.translationLang}
         open={showWordList}
         onClose={() => setShowWordList(false)}
       />
