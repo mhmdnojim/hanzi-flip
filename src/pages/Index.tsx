@@ -20,8 +20,7 @@ import {
   genPresetId, sequenceSignature, type SequencePreset,
 } from "@/lib/sequencePresets";
 import { detectLanguageNameFromText } from "@/lib/detectLanguage";
-import { setDeckFileHandle, saveDeckToExcel, downloadDeckAsExcel } from "@/lib/excelSync";
-import { ToastAction } from "@/components/ui/toast";
+import { setDeckFileHandle, saveDeckToExcel } from "@/lib/excelSync";
 import { getLanguage } from "@/utils/languages";
 import {
   applyTheme, getTheme, loadThemeId, saveThemeId,
@@ -282,23 +281,7 @@ const Index = () => {
     if (!editStamp || editStamp === savedStamp.current) return;
     const t = setTimeout(async () => {
       savedStamp.current = editStamp;
-      const written = await saveDeckToExcel(deckRef.current);
-      if (written) {
-        toast({ title: "Saved to Excel file", duration: 1500 });
-      } else {
-        // No writable file handle (browser without File System Access, or an
-        // older import) — offer to save the updated workbook instead.
-        toast({
-          title: "Edit saved",
-          description: "Save the updated Excel file to keep it in sync.",
-          duration: 6000,
-          action: (
-            <ToastAction altText="Save Excel" onClick={() => void downloadDeckAsExcel(deckRef.current)}>
-              Save Excel
-            </ToastAction>
-          ),
-        });
-      }
+      await saveDeckToExcel(deckRef.current);
     }, 700);
     return () => clearTimeout(t);
   }, [editStamp, toast]);
@@ -634,6 +617,7 @@ const Index = () => {
               vocabulary.updateWord(activeWord.id, next);
               // Persist the edit back into the source .xlsx (debounced)
               setEditStamp(Date.now());
+              toast({ title: "Edit saved", duration: 1000 });
             }}
           />
         </div>
