@@ -389,6 +389,7 @@ export async function parseSenseWorkbook(file: File): Promise<SenseImportResult>
 
       const source = mainByRow.get(sourceRow);
       const extraColumns: Record<string, string> = { "Sense ID": senseId, "Concept ID": conceptId };
+      const partOfSpeech = source ? norm(source["Part of Speech"] || source["POS"] || source["Word Type"]) : "";
       const status = norm(sense["Sense Status"]);
       if (status) extraColumns["Sense Status"] = status;
       if (review) extraColumns["Review"] = "Needs review";
@@ -408,6 +409,7 @@ export async function parseSenseWorkbook(file: File): Promise<SenseImportResult>
         chinese: values["zh"] || english,
         pinyin: values["zh-pinyin"] || "",
         english,
+        partOfSpeech: partOfSpeech || undefined,
         exampleSentence,
         extraColumns,
         conceptId,

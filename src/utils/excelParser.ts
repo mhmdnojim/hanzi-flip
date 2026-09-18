@@ -22,6 +22,12 @@ interface ParseResult {
   };
 }
 
+function partOfSpeechFromRow(row: Record<string, string>, headers: string[]): string | undefined {
+  const header = headers.find((key) => /^(part\s*of\s*speech|word\s*type|pos)$/i.test(key.trim()));
+  const value = header ? String(row[header] ?? "").trim() : "";
+  return value || undefined;
+}
+
 export interface SheetPreview {
   success: boolean;
   error?: string;
@@ -141,6 +147,7 @@ export function buildWordsFromMapping(
         explanation: preview.explanationCol
           ? String(row[preview.explanationCol] || "").trim() || undefined
           : undefined,
+        partOfSpeech: partOfSpeechFromRow(row, preview.headers),
         extraColumns: Object.keys(extra).length ? extra : undefined,
         favorite: false,
         correctCount: 0,
@@ -304,6 +311,7 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
           english: values[secondary] || "",
           exampleSentence: exampleCol ? String(row[exampleCol] || "").trim() || undefined : undefined,
           explanation: explanationCol ? String(row[explanationCol] || "").trim() || undefined : undefined,
+          partOfSpeech: partOfSpeechFromRow(row, headers),
           extraColumns: Object.keys(extra).length ? extra : undefined,
           favorite: false,
           correctCount: 0,
