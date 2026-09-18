@@ -147,33 +147,30 @@ export function CompactToolbar(props: CompactToolbarProps) {
             </TooltipContent>
           </Tooltip>
           <DropdownMenuContent className="max-h-[70vh] overflow-y-auto">
-            <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Included libraries
-            </DropdownMenuLabel>
-            {BUILT_IN_LIBRARIES.map((library) => (
-              <DropdownMenuSub key={library.id}>
-                <DropdownMenuSubTrigger className="gap-2">
-                  <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{library.name}</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  {library.levels.map((level) => {
-                    const key = `${library.id}:${level}`;
-                    return (
-                      <DropdownMenuItem
-                        key={level}
-                        onClick={() => props.onSelectBuiltIn(library.id, level)}
-                        disabled={props.loadingBuiltIn === key}
-                      >
-                        {level}
-                        {props.loadingBuiltIn === key && (
-                          <span className="ml-auto text-xs text-muted-foreground">loading…</span>
-                        )}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
+            {BUILT_IN_LIBRARIES.map((library, libraryIndex) => (
+              <div key={library.id}>
+                {libraryIndex > 0 && <DropdownMenuSeparator />}
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {library.name}
+                </DropdownMenuLabel>
+                {library.levels.map((level) => {
+                  const key = `${library.id}:${level}`;
+                  return (
+                    <DropdownMenuItem
+                      key={level}
+                      onClick={() => props.onSelectBuiltIn(library.id, level)}
+                      disabled={props.loadingBuiltIn === key}
+                      className="gap-2"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{level}</span>
+                      {props.loadingBuiltIn === key && (
+                        <span className="ml-auto text-xs text-muted-foreground">loading…</span>
+                      )}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </div>
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
