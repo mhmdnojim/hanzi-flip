@@ -587,6 +587,7 @@ export function FlashcardView(props: FlashcardViewProps) {
                             initial={{ opacity: 0, y: -6 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-center text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
+                          >
                             {displayedPinyin}
                           </motion.p>
                         )}
