@@ -625,7 +625,7 @@ export function FlashcardView(props: FlashcardViewProps) {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={(e) => { e.stopPropagation(); startEdit("chinese", word.chinese); }}
+                                onClick={(e) => { e.stopPropagation(); startEdit("chinese", word.chinese, word.pinyin || ""); }}
                                 className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
@@ -695,20 +695,35 @@ export function FlashcardView(props: FlashcardViewProps) {
               ) : (
                 <>
                   {editingField === "english" ? (
-                    <input
-                      autoFocus
-                      value={editDraft}
-                      onChange={(e) => setEditDraft(e.target.value)}
+                    <div
+                      className="flex flex-col items-center gap-1.5 w-full"
                       onClick={(e) => e.stopPropagation()}
-                      onBlur={commitEdit}
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === "Enter") commitEdit();
-                        if (e.key === "Escape") setEditingField(null);
-                      }}
-                      className="font-body font-bold leading-tight px-4 text-center bg-white/15 rounded-xl border border-white/30 outline-none text-white w-full"
-                      style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
-                    />
+                      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) commitEdit(); }}
+                    >
+                      <input
+                        autoFocus
+                        value={editLatinDraft}
+                        onChange={(e) => setEditLatinDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter") commitEdit();
+                          if (e.key === "Escape") setEditingField(null);
+                        }}
+                        placeholder="Latin transcription"
+                        className="px-3 text-center bg-white/10 rounded-lg border border-white/20 outline-none text-white/80 text-lg sm:text-xl italic w-full"
+                      />
+                      <input
+                        value={editDraft}
+                        onChange={(e) => setEditDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter") commitEdit();
+                          if (e.key === "Escape") setEditingField(null);
+                        }}
+                        className="font-body font-bold leading-tight px-4 text-center bg-white/15 rounded-xl border border-white/30 outline-none text-white w-full"
+                        style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
+                      />
+                    </div>
                   ) : (
                     <div className="flex items-start justify-center gap-2">
                       <div className="relative flex flex-col items-center">
