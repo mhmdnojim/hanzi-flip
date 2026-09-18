@@ -21,7 +21,8 @@ import {
 } from "@/lib/sequencePresets";
 import { detectLanguageNameFromText } from "@/lib/detectLanguage";
 import { setDeckFileHandle, saveDeckToExcel } from "@/lib/excelSync";
-import { getLanguage } from "@/utils/languages";
+import { getLanguage, romanizationCodeFor } from "@/utils/languages";
+import { TopicDeckDialog } from "@/components/TopicDeckDialog";
 import {
   applyTheme, getTheme, loadThemeId, saveThemeId,
   FONT_SIZE_PX, type FontSizePreset,
@@ -354,6 +355,61 @@ const Index = () => {
     },
     [vocabulary, toast],
   );
+
+  // ── AI topic deck generator ──
+  const [topicDialogOpen, setTopicDialogOpen] = useState(false);
+  const [generatingTopic, setGeneratingTopic] = useState(false);
+  const handleGenerateTopicDeck = useCallback(
+    async (topic: string, count: number) => {
+      setGeneratingTopic(true);
+      try {
+        const frontLang = vocabulary.studyLang;
+        const backLang = vocabulary.translationLang;
+        const romanCode = romanizationCodeFor(frontLang);
+        const front = getLanguage(frontLang);
+        const back = getLanguage(backLang);
+        const { data, error } = await supabase.functions.invoke("generate-topic-deck", {
+          body: {
+            topic,
+            count,
+            frontLanguage: front.name,
+            backLanguage: back.name,
+            romanizationLabel: romanCode ? front.romanizationLabel || "transcription" : "",
+          },
+        });
+        if (error) throw new Error(error.message || "AI request failed");
+        const generated = (data?.words ?? []) as { front: string; romanization?: string; back: string; pos?: string }[];
+        if (!generated.length) throw new Error(data?.error || "The AI returned no words");
+
+        const languages = romanCode ? [frontLang, romanCode, backLang] : [frontLang, backLang];
+        const words = generated.map((w) => {
+          const values: Record<string, string> = { [frontLang]: w.front, [backLang]: w.back };
+          if (romanCode && w.romanization) values[romanCode] = w.romanization;
+          return {
+            id: "",
+            chinese: w.front,
+            pinyin: w.romanization || "",
+            english: w.back,
+            values,
+            partOfSpeech: w.pos || undefined,
+          };
+        });
+        vocabulary.addDeck(`AI: ${topic}`, words, languages);
+        setTopicDialogOpen(false);
+        toast({ title: `Created “AI: ${topic}”`, description: `${words.length} words generated` });
+      } catch (e: any) {
+        toast({
+          title: "Couldn't generate the deck",
+          description: e?.message || "Unknown error",
+          variant: "destructive",
+        });
+      } finally {
+        setGeneratingTopic(false);
+      }
+    },
+    [vocabulary, toast],
+  );
+
 
   // Reload older saved built-in decks so Latin text always reflects the workbook cells.
   useEffect(() => {
