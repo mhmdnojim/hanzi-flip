@@ -217,6 +217,18 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
     return backTranscriptionCode && word.values?.[backTranscriptionCode] ? word.values[backTranscriptionCode] : "";
   }, [word.values, backTranscriptionCode]);
 
+  // Expose edit trigger to the parent toolbar
+  useImperativeHandle(ref, () => ({
+    startEditCurrentWord: () => {
+      if (!onEditWord) return;
+      if (isFlipped) {
+        startEdit("english", word.english, backTranscription);
+      } else {
+        startEdit("chinese", word.chinese, word.pinyin || "");
+      }
+    },
+  }), [onEditWord, isFlipped, word.english, word.chinese, word.pinyin, backTranscription]);
+
   const isRtl = (label: string) =>
     !!LANGUAGES.find((l) => l.name === label || l.native === label || l.short === label)?.rtl;
 
