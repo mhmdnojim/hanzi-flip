@@ -27,6 +27,14 @@ type TopicFilter =
 
 interface WordClassification { pos: string; topic: string; }
 
+function filePartOfSpeech(word: VocabularyWord): string {
+  if (word.partOfSpeech?.trim()) return word.partOfSpeech.trim();
+  const entry = Object.entries(word.extraColumns ?? {}).find(([key]) =>
+    /^(part\s*of\s*speech|word\s*type|pos)$/i.test(key.trim()),
+  );
+  return entry?.[1]?.trim() ?? "";
+}
+
 const ALL_CATEGORIES: WordCategory[] = ["regular", "idiom", "phrasal", "collocation"];
 const ALL_POS: POSFilter[] = ["noun", "verb", "adjective", "adverb", "measure_word", "other"];
 const ALL_TOPICS: TopicFilter[] = ["food", "family", "travel", "body", "education", "work", "emotions", "daily_life", "social", "other"];
@@ -253,8 +261,8 @@ export function WordListPanel({
       if (!charTypeFilters.has(type)) return false;
     }
     if (posFilters.size > 0) {
-      const cls = classifications.get(w.id);
-      if (cls && !posFilters.has(normalizePOS(cls.pos))) return false;
+      const pos = filePartOfSpeech(w);
+      if (pos && !posFilters.has(normalizePOS(pos))) return false;
     }
     if (topicFilters.size > 0) {
       const cls = classifications.get(w.id);
@@ -448,15 +456,13 @@ export function WordListPanel({
                 <FilterPill active={frequencyFilters.has("rare")} onClick={() => toggleInSet(setFrequencyFilters, "rare")}>Rare</FilterPill>
               </FilterRow>
 
-              {/* POS (AI) */}
-              <FilterRow label="Part of Speech" aiPowered
-                onClassify={classifications.size === 0 ? handleClassifyWords : undefined}
-                isClassifying={isClassifying}
+              {/* Part of speech comes directly from the workbook. */}
+              <FilterRow label="Part of Speech"
                 allValues={ALL_POS}
                 activeValues={posFilters}
                 onToggleAll={(all) => setPosFilters(all ? new Set(ALL_POS) : new Set())}>
                 {ALL_POS.map((p) => (
-                  <FilterPill key={p} active={posFilters.has(p)} onClick={() => toggleInSet(setPosFilters, p)} disabled={classifications.size === 0}>
+                  <FilterPill key={p} active={posFilters.has(p)} onClick={() => toggleInSet(setPosFilters, p)} disabled={!allWords.some((word) => filePartOfSpeech(word))}>
                     {p === "measure_word" ? "Meas." : p.charAt(0).toUpperCase() + p.slice(1)}
                   </FilterPill>
                 ))}
@@ -507,6 +513,7 @@ export function WordListPanel({
               const globalIndex = allWords.indexOf(w);
               const hskLevel = getHSKLevel(w.chinese);
               const cls = classifications.get(w.id);
+              const partOfSpeech = filePartOfSpeech(w);
               const expanded = expandedIds.has(w.id);
 
               const frontLang = getLanguage(studyLang);
@@ -537,7 +544,7 @@ export function WordListPanel({
                         {w.isPhrasalVerb && <Badge variant="secondary" className="text-[8px] px-1 py-0">Phrasal</Badge>}
                         {w.isCollocation && <Badge variant="secondary" className="text-[8px] px-1 py-0">Colloc.</Badge>}
                         {hskLevel && <Badge variant="outline" className="text-[8px] px-1 py-0 border-primary/40 text-primary">HSK{hskLevel}</Badge>}
-                        {cls && <Badge variant="outline" className="text-[8px] px-1 py-0 border-muted-foreground/30 text-muted-foreground">{cls.pos}</Badge>}
+                        {partOfSpeech && <Badge variant="outline" className="text-[8px] px-1 py-0 border-muted-foreground/30 text-muted-foreground">{partOfSpeech}</Badge>}
                       </div>
                       <div className="flex items-center gap-2 ml-7">
                         <span className="text-muted-foreground truncate" style={{ fontSize: fontSize * 0.8 }}>{w.english}</span>
