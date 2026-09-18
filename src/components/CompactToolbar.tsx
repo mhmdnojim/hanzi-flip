@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Languages,
   Type as TypeIcon,
+  Pencil,
   Trash2,
   Palette,
   FileSpreadsheet,
@@ -72,6 +73,7 @@ interface CompactToolbarProps {
   onFontSizePresetChange: (size: FontSizePreset) => void;
   showPinyin: boolean;
   onTogglePinyin: () => void;
+  onEditCurrentWord?: () => void;
   showChineseFirst: boolean;
   onToggleChineseFirst: () => void;
   onResetFlip: () => void;
@@ -418,6 +420,24 @@ export function CompactToolbar(props: CompactToolbarProps) {
             <p>
               {props.showPinyin ? "Hide" : "Show"} {studyLanguage.romanizationLabel || "transcription"}
             </p>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Edit current word */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full"
+              onClick={props.onEditCurrentWord}
+              disabled={!props.onEditCurrentWord}
+            >
+              <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Edit current word</p>
           </TooltipContent>
         </Tooltip>
 

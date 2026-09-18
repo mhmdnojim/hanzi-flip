@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef } from "react";
 import { motion } from "framer-motion";
 import {
   Heart, ChevronLeft, ChevronRight, Volume2,
@@ -8,7 +8,6 @@ import {
   Pause, Play, ArrowUp, ArrowDown, Trash2, Settings2, List,
   Save, Sparkles, Loader2, ChevronDown,
   EyeOff, Pencil, ListChecks, Layers,
-  Type as TypeIcon,
 } from "lucide-react";
 import {
   VocabularyWord, AutoplayMode,
@@ -48,7 +47,6 @@ interface FlashcardViewProps {
   onPrevious: () => void;
   onToggleFavorite: () => void;
   showPinyin: boolean;
-  onTogglePinyin?: () => void;
   showChineseFirst: boolean;
   fontSize: number;
   onFontSizeChange: (size: number) => void;
@@ -111,10 +109,14 @@ interface FlashcardViewProps {
   onEditWord?: (patch: Partial<VocabularyWord>) => void;
 }
 
-export function FlashcardView(props: FlashcardViewProps) {
+export interface FlashcardViewHandle {
+  startEditCurrentWord: () => void;
+}
+
+export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>(function FlashcardView(props, ref) {
   const {
     word, isFlipped, onFlip, onNext, onPrevious, onToggleFavorite,
-    showPinyin, onTogglePinyin, showChineseFirst, fontSize, onFontSizeChange,
+    showPinyin, showChineseFirst, fontSize, onFontSizeChange,
     onSpeakChinese, onSpeakEnglish,
     autoplayMode, onAutoplayModeChange, isAutoplayActive,
     autoplayRepeatCount, onAutoplayRepeatCountChange,
@@ -214,6 +216,18 @@ export function FlashcardView(props: FlashcardViewProps) {
   const backTranscription = useMemo(() => {
     return backTranscriptionCode && word.values?.[backTranscriptionCode] ? word.values[backTranscriptionCode] : "";
   }, [word.values, backTranscriptionCode]);
+
+  // Expose edit trigger to the parent toolbar
+  useImperativeHandle(ref, () => ({
+    startEditCurrentWord: () => {
+      if (!onEditWord) return;
+      if (isFlipped) {
+        startEdit("english", word.english, backTranscription);
+      } else {
+        startEdit("chinese", word.chinese, word.pinyin || "");
+      }
+    },
+  }), [onEditWord, isFlipped, word.english, word.chinese, word.pinyin, backTranscription]);
 
   const isRtl = (label: string) =>
     !!LANGUAGES.find((l) => l.name === label || l.native === label || l.short === label)?.rtl;
@@ -605,22 +619,6 @@ export function FlashcardView(props: FlashcardViewProps) {
                         )}
                       </div>
                       <div className="flex flex-col gap-1.5 mt-1 shrink-0">
-                        {onTogglePinyin && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onTogglePinyin(); }}
-                                className={cn(
-                                  "p-1.5 rounded-full transition-colors",
-                                  showPinyin ? "bg-pink-500/80 text-white" : "bg-white/20 hover:bg-white/30 text-white"
-                                )}
-                              >
-                                <TypeIcon className="w-3.5 h-3.5" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>{showPinyin ? "Hide" : "Show"} Latin transcription</p></TooltipContent>
-                          </Tooltip>
-                        )}
                         {onEditWord && (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -747,22 +745,6 @@ export function FlashcardView(props: FlashcardViewProps) {
                         </p>
                       </div>
                       <div className="flex flex-col gap-1.5 mt-1 shrink-0">
-                        {onTogglePinyin && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onTogglePinyin(); }}
-                                className={cn(
-                                  "p-1.5 rounded-full transition-colors",
-                                  showPinyin ? "bg-pink-500/80 text-white" : "bg-white/20 hover:bg-white/30 text-white"
-                                )}
-                              >
-                                <TypeIcon className="w-3.5 h-3.5" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>{showPinyin ? "Hide" : "Show"} Latin transcription</p></TooltipContent>
-                          </Tooltip>
-                        )}
                         {onEditWord && (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -1321,4 +1303,4 @@ export function FlashcardView(props: FlashcardViewProps) {
       )}
     </TooltipProvider>
   );
-}
+});

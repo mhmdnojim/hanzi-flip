@@ -1,7 +1,7 @@
 import { getSelectedText } from "@/lib/meanings";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { FlashcardView } from "@/components/FlashcardView";
+import { FlashcardView, type FlashcardViewHandle } from "@/components/FlashcardView";
 import { CompactToolbar } from "@/components/CompactToolbar";
 import { WordListPanel } from "@/components/WordListPanel";
 import { useVocabulary } from "@/hooks/useVocabulary";
@@ -31,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const { toast } = useToast();
+  const flashcardRef = useRef<FlashcardViewHandle>(null);
   const [isFlipped, setIsFlipped] = useState(false);
   const [showPinyin, setShowPinyin] = useState(true);
   const [showChineseFirst, setShowChineseFirst] = useState(true);
@@ -513,6 +514,7 @@ const Index = () => {
           onFontSizePresetChange={handleFontSizePresetChange}
           showPinyin={showPinyin}
           onTogglePinyin={() => setShowPinyin(!showPinyin)}
+          onEditCurrentWord={() => flashcardRef.current?.startEditCurrentWord()}
           showChineseFirst={showChineseFirst}
           onResetFlip={() => setIsFlipped(false)}
           onToggleChineseFirst={() => setShowChineseFirst(!showChineseFirst)}
@@ -531,6 +533,7 @@ const Index = () => {
         {/* Flashcard View - Full width, contains everything */}
         <div className="flex-1 mt-2 sm:mt-4">
           <FlashcardView
+            ref={flashcardRef}
             word={activeWord}
             isFlipped={isFlipped}
             onFlip={handleFlip}
@@ -538,7 +541,6 @@ const Index = () => {
             onPrevious={handlePrevious}
             onToggleFavorite={() => vocabulary.toggleFavorite(activeWord.id)}
             showPinyin={showPinyin}
-            onTogglePinyin={() => setShowPinyin(!showPinyin)}
             showChineseFirst={showChineseFirst}
             fontSize={fontSize}
             onFontSizeChange={setFontSize}
