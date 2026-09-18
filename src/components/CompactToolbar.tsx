@@ -73,6 +73,7 @@ interface CompactToolbarProps {
   onFontSizePresetChange: (size: FontSizePreset) => void;
   showPinyin: boolean;
   onTogglePinyin: () => void;
+  onEditCurrentWord?: () => void;
   showChineseFirst: boolean;
   onToggleChineseFirst: () => void;
   onResetFlip: () => void;
