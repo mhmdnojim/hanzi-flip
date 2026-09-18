@@ -418,11 +418,19 @@ const Index = () => {
             partOfSpeech: w.pos || undefined,
           };
         });
-        vocabulary.addDeck(`AI: ${topic}`, words, languages);
+        if (!words.length) throw new Error("No new words this time — try a higher number of words");
+        if (existingDeck) {
+          vocabulary.appendWordsToDeck(existingDeck.id, words);
+        } else {
+          vocabulary.addDeck(`AI: ${topic}`, words, languages);
+        }
         studySession.goToIndex(0);
         setIsFlipped(false);
         setTopicDialogOpen(false);
-        toast({ title: `Created “AI: ${topic}”`, description: `${words.length} words generated` });
+        toast({
+          title: existingDeck ? `Added to “${topic}”` : `Created “AI: ${topic}”`,
+          description: `${words.length} words ${existingDeck ? "added" : "generated"}`,
+        });
       } catch (e: any) {
         toast({
           title: "Couldn't generate the deck",
