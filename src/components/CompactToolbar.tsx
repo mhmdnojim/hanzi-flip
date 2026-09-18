@@ -123,9 +123,8 @@ export function CompactToolbar(props: CompactToolbarProps) {
   const activeLibraryId = pickedLibraryId ?? deckLibraryId ?? null;
   const activeLibrary = BUILT_IN_LIBRARIES.find((l) => l.id === activeLibraryId);
   const setLibraryId = (id: string) => setPickedLibraryId(id);
-  const fileLabel = activeLibrary && activeLibraryId !== deckLibraryId
-    ? activeLibrary.name
-    : props.deckName;
+  const fileLabel = activeLibrary ? activeLibrary.name : props.deckName;
+
 
 
   return (
