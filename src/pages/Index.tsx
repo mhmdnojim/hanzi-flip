@@ -372,6 +372,16 @@ const Index = () => {
     [vocabulary, toast],
   );
 
+  // Reload older saved built-in decks so Latin text always reflects the workbook cells.
+  useEffect(() => {
+    const builtInKey = vocabulary.currentDeck.builtInKey;
+    if (!builtInKey) return;
+    const [libraryId, level, savedVersion] = builtInKey.split(":");
+    const library = getBuiltInLibrary(libraryId);
+    if (!library || !level || savedVersion === library.version || loadingBuiltIn) return;
+    void handleSelectBuiltIn(libraryId, level);
+  }, [vocabulary.currentDeck.builtInKey, handleSelectBuiltIn, loadingBuiltIn]);
+
   const handleConfirmMapping = useCallback(
     (mapping: Record<string, string | null>) => {
       const preview = previewQueue[0];
