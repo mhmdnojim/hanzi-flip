@@ -403,7 +403,10 @@ const Index = () => {
         if (!generated.length) throw new Error(data?.error || "The AI returned no words");
 
         const languages = romanCode ? [frontLang, romanCode, backLang] : [frontLang, backLang];
-        const words = generated.map((w) => {
+        const seen = new Set(existingWords.map((s) => s.trim().toLowerCase()));
+        const words = generated
+          .filter((w) => !seen.has(w.front.trim().toLowerCase()))
+          .map((w) => {
           const values: Record<string, string> = { [frontLang]: w.front, [backLang]: w.back };
           if (romanCode && w.romanization) values[romanCode] = w.romanization;
           return {
