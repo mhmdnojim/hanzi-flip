@@ -187,6 +187,18 @@ export function FlashcardView(props: FlashcardViewProps) {
       .filter((p): p is string => !!p);
     return kept.length ? joinMeanings(kept) : word.pinyin;
   }, [word.pinyin, hasMultipleFront, frontMeanings, frontSel.selected]);
+
+  // Transcription for the translation (back) side, looked up from the multi-language map
+  const translationLangCode = useMemo(
+    () => LANGUAGES.find((l) => l.name === translationLabel || l.native === translationLabel || l.short === translationLabel)?.code ?? null,
+    [translationLabel]
+  );
+  const backTranscription = useMemo(() => {
+    if (!translationLangCode) return "";
+    const code = romanizationCodeFor(translationLangCode);
+    return code && word.values?.[code] ? word.values[code] : "";
+  }, [word.values, translationLangCode]);
+
   const isRtl = (label: string) =>
     !!LANGUAGES.find((l) => l.name === label || l.native === label || l.short === label)?.rtl;
 
