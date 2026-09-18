@@ -553,6 +553,7 @@ const Index = () => {
           onImport={handleImport}
           onSelectBuiltIn={handleSelectBuiltIn}
           loadingBuiltIn={loadingBuiltIn}
+          onCreateTopicDeck={() => setTopicDialogOpen(true)}
           availableLanguages={vocabulary.availableLanguages}
           studyLang={vocabulary.studyLang}
           translationLang={vocabulary.translationLang}
