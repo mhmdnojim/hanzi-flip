@@ -533,6 +533,7 @@ const Index = () => {
         {/* Flashcard View - Full width, contains everything */}
         <div className="flex-1 mt-2 sm:mt-4">
           <FlashcardView
+            ref={flashcardRef}
             word={activeWord}
             isFlipped={isFlipped}
             onFlip={handleFlip}
@@ -540,7 +541,6 @@ const Index = () => {
             onPrevious={handlePrevious}
             onToggleFavorite={() => vocabulary.toggleFavorite(activeWord.id)}
             showPinyin={showPinyin}
-            onTogglePinyin={() => setShowPinyin(!showPinyin)}
             showChineseFirst={showChineseFirst}
             fontSize={fontSize}
             onFontSizeChange={setFontSize}
