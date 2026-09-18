@@ -47,7 +47,6 @@ interface FlashcardViewProps {
   onPrevious: () => void;
   onToggleFavorite: () => void;
   showPinyin: boolean;
-  onTogglePinyin?: () => void;
   showChineseFirst: boolean;
   fontSize: number;
   onFontSizeChange: (size: number) => void;
