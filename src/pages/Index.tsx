@@ -10,6 +10,7 @@ import { useStudySession } from "@/hooks/useStudySession";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { previewExcelFile, buildWordsFromMapping, type SheetPreview } from "@/utils/excelParser";
 import { parseSenseWorkbook } from "@/utils/senseWorkbook";
+import { loadBuiltInLevel } from "@/lib/builtInLibraries";
 import { ColumnMappingDialog } from "@/components/ColumnMappingDialog";
 import { useToast } from "@/hooks/use-toast";
 import { CustomSequenceStep } from "@/types/vocabulary";
@@ -341,6 +342,34 @@ const Index = () => {
     [toast, vocabulary]
   );
 
+  // ── Built-in libraries (New HSK 1–6, English Dictionary A1–C1) ──
+  const [loadingBuiltIn, setLoadingBuiltIn] = useState<string | null>(null);
+  const handleSelectBuiltIn = useCallback(
+    async (libraryId: string, level: string) => {
+      const key = `${libraryId}:${level}`;
+      const existing = vocabulary.decks.find((d) => d.builtInKey === key);
+      if (existing) {
+        vocabulary.setCurrentDeckId(existing.id);
+        return;
+      }
+      setLoadingBuiltIn(key);
+      try {
+        const deck = await loadBuiltInLevel(libraryId, level);
+        vocabulary.addDeck(deck.name, deck.words, deck.languages, deck.columns, key);
+        toast({ title: `Loaded ${deck.name}`, description: `${deck.words.length} words` });
+      } catch (e: any) {
+        toast({
+          title: "Couldn't load this level",
+          description: e?.message || "Unknown error",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingBuiltIn(null);
+      }
+    },
+    [vocabulary, toast],
+  );
+
   const handleConfirmMapping = useCallback(
     (mapping: Record<string, string | null>) => {
       const preview = previewQueue[0];
@@ -471,6 +500,8 @@ const Index = () => {
           onDeckChange={vocabulary.setCurrentDeckId}
           onDeleteDeck={vocabulary.deleteDeck}
           onImport={handleImport}
+          onSelectBuiltIn={handleSelectBuiltIn}
+          loadingBuiltIn={loadingBuiltIn}
           availableLanguages={vocabulary.availableLanguages}
           studyLang={vocabulary.studyLang}
           translationLang={vocabulary.translationLang}

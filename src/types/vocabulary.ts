@@ -51,6 +51,8 @@ export interface VocabularyDeck {
   createdAt: Date;
   /** language codes present in this deck (real languages + transcriptions) */
   languages?: string[];
+  /** set when the deck came from a built-in library level, e.g. "new-hsk:HSK1" */
+  builtInKey?: string;
   /** Original spreadsheet layout, used to write edits back to the .xlsx file */
   columns?: {
     headers: string[];

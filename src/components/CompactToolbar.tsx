@@ -20,9 +20,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { BUILT_IN_LIBRARIES } from "@/lib/builtInLibraries";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,6 +57,9 @@ interface CompactToolbarProps {
   onDeckChange: (deckId: string) => void;
   onDeleteDeck: (deckId: string) => void;
   onImport: (files: File[], handles?: unknown[]) => void;
+  /** Pick a level from a built-in library (New HSK, English Dictionary) */
+  onSelectBuiltIn: (libraryId: string, level: string) => void;
+  loadingBuiltIn?: string | null;
   /** Multi-language selection */
   availableLanguages: string[];
   studyLang: string;
@@ -138,7 +146,39 @@ export function CompactToolbar(props: CompactToolbarProps) {
               <p>Select level / vocabulary file</p>
             </TooltipContent>
           </Tooltip>
-          <DropdownMenuContent>
+          <DropdownMenuContent className="max-h-[70vh] overflow-y-auto">
+            <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Included libraries
+            </DropdownMenuLabel>
+            {BUILT_IN_LIBRARIES.map((library) => (
+              <DropdownMenuSub key={library.id}>
+                <DropdownMenuSubTrigger className="gap-2">
+                  <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{library.name}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {library.levels.map((level) => {
+                    const key = `${library.id}:${level}`;
+                    return (
+                      <DropdownMenuItem
+                        key={level}
+                        onClick={() => props.onSelectBuiltIn(library.id, level)}
+                        disabled={props.loadingBuiltIn === key}
+                      >
+                        {level}
+                        {props.loadingBuiltIn === key && (
+                          <span className="ml-auto text-xs text-muted-foreground">loading…</span>
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              My files
+            </DropdownMenuLabel>
             {props.decks.map((deck) => (
               <DropdownMenuItem
                 key={deck.id}
