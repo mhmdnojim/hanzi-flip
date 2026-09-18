@@ -744,6 +744,7 @@ const Index = () => {
         frontLanguageName={getLanguage(vocabulary.studyLang).name}
         backLanguageName={getLanguage(vocabulary.translationLang).name}
         generating={generatingTopic}
+        existingTopics={topicOptions}
         onGenerate={handleGenerateTopicDeck}
       />
     </div>
