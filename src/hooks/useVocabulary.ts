@@ -71,6 +71,7 @@ export function useVocabulary() {
     const values = wordValues(w);
     return {
       ...w,
+      values,
       chinese: values[activeStudyLang] ?? "",
       pinyin: (transcriptionLang && values[transcriptionLang]) || "",
       english: values[activeTranslationLang] ?? "",
