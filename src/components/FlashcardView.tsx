@@ -797,7 +797,7 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
                       Add example translation
                     </button>
                   )}
-                  <div className="mt-3 flex flex-wrap items-center justify-center gap-2 max-w-[92%]" onClick={(e) => e.stopPropagation()}>
+                  <div className="mt-12 flex flex-wrap items-center justify-center gap-2 max-w-[92%]" onClick={(e) => e.stopPropagation()}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button onClick={(e) => { e.stopPropagation(); onSpeakEnglish(); }}
