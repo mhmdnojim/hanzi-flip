@@ -409,7 +409,7 @@ const Index = () => {
         setGeneratingTopic(false);
       }
     },
-    [vocabulary, toast],
+    [vocabulary, studySession, toast],
   );
 
 
