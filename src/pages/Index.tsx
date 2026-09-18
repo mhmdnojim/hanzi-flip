@@ -1,7 +1,7 @@
 import { getSelectedText } from "@/lib/meanings";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { FlashcardView } from "@/components/FlashcardView";
+import { FlashcardView, type FlashcardViewHandle } from "@/components/FlashcardView";
 import { CompactToolbar } from "@/components/CompactToolbar";
 import { WordListPanel } from "@/components/WordListPanel";
 import { useVocabulary } from "@/hooks/useVocabulary";
