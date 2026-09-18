@@ -206,11 +206,14 @@ export function FlashcardView(props: FlashcardViewProps) {
     () => LANGUAGES.find((l) => l.name === translationLabel || l.native === translationLabel || l.short === translationLabel)?.code ?? null,
     [translationLabel]
   );
+  const studyLangCode = useMemo(
+    () => LANGUAGES.find((l) => l.name === originalLabel || l.native === originalLabel || l.short === originalLabel)?.code ?? null,
+    [originalLabel]
+  );
+  const backTranscriptionCode = translationLangCode ? romanizationCodeFor(translationLangCode) : null;
   const backTranscription = useMemo(() => {
-    if (!translationLangCode) return "";
-    const code = romanizationCodeFor(translationLangCode);
-    return code && word.values?.[code] ? word.values[code] : "";
-  }, [word.values, translationLangCode]);
+    return backTranscriptionCode && word.values?.[backTranscriptionCode] ? word.values[backTranscriptionCode] : "";
+  }, [word.values, backTranscriptionCode]);
 
   const isRtl = (label: string) =>
     !!LANGUAGES.find((l) => l.name === label || l.native === label || l.short === label)?.rtl;
