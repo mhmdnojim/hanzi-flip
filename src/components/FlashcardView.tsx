@@ -25,7 +25,7 @@ import {
   DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { sequenceSignature, type SequencePreset } from "@/lib/sequencePresets";
-import { LANGUAGES, detectLanguageFromHeader } from "@/utils/languages";
+import { LANGUAGES, detectLanguageFromHeader, romanizationCodeFor } from "@/utils/languages";
 
 /** Extra spreadsheet columns worth showing: skip any column that is really a
  * language / transliteration column (those belong to the language selectors). */
