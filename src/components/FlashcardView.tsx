@@ -24,7 +24,18 @@ import {
   DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { sequenceSignature, type SequencePreset } from "@/lib/sequencePresets";
-import { LANGUAGES } from "@/utils/languages";
+import { LANGUAGES, detectLanguageFromHeader } from "@/utils/languages";
+
+/** Extra spreadsheet columns worth showing: skip any column that is really a
+ * language / transliteration column (those belong to the language selectors). */
+function visibleExtraColumns(extra?: Record<string, string>): [string, string][] {
+  if (!extra) return [];
+  return Object.entries(extra).filter(([key]) => {
+    const k = key.trim().toLowerCase();
+    if (/\b(latin|romani[sz]ation|transliteration|pinyin)\b/.test(k)) return false;
+    return !detectLanguageFromHeader(key);
+  });
+}
 import { splitMeanings, joinMeanings, useMeaningSelection } from "@/lib/meanings";
 import MeaningsPanel from "@/components/MeaningsPanel";
 
