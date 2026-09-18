@@ -147,6 +147,26 @@ export function useVocabulary() {
     return newDeck.id;
   }, []);
 
+  /** Append extra words to an existing deck (used when adding more AI words to a topic) */
+  const appendWordsToDeck = useCallback((deckId: string, newWords: VocabularyWord[]) => {
+    setDecks((prev) =>
+      prev.map((d) =>
+        d.id === deckId
+          ? {
+              ...d,
+              words: [
+                ...d.words,
+                ...newWords.map((w, i) => ({ ...w, id: `${Date.now()}_a${i}` })),
+              ],
+            }
+          : d,
+      ),
+    );
+    setCurrentDeckId(deckId);
+    setIsShuffled(false);
+    setShuffledOrder([]);
+  }, []);
+
   const deleteDeck = useCallback((deckId: string) => {
     setDecks((prev) => {
       const next = prev.filter((d) => d.id !== deckId);
@@ -307,6 +327,7 @@ export function useVocabulary() {
     setStorageMode,
     setCurrentDeckId,
     addDeck,
+    appendWordsToDeck,
     deleteDeck,
     updateWord,
     toggleFavorite,

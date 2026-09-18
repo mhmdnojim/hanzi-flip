@@ -359,8 +359,19 @@ const Index = () => {
   // ── AI topic deck generator ──
   const [topicDialogOpen, setTopicDialogOpen] = useState(false);
   const [generatingTopic, setGeneratingTopic] = useState(false);
+  const topicOptions = useMemo(
+    () =>
+      vocabulary.decks
+        .filter((d) => !d.builtInKey && d.name.startsWith("AI: "))
+        .map((d) => ({
+          id: d.id,
+          name: d.name.replace(/^AI:\s*/, ""),
+          wordCount: d.words.length,
+        })),
+    [vocabulary.decks],
+  );
   const handleGenerateTopicDeck = useCallback(
-    async (topic: string, count: number) => {
+    async (topic: string, count: number, existingDeckId?: string) => {
       setGeneratingTopic(true);
       try {
         const frontLang = vocabulary.studyLang;
@@ -368,6 +379,15 @@ const Index = () => {
         const romanCode = romanizationCodeFor(frontLang);
         const front = getLanguage(frontLang);
         const back = getLanguage(backLang);
+        const existingDeck = existingDeckId
+          ? vocabulary.decks.find((d) => d.id === existingDeckId)
+          : undefined;
+        const existingWords = existingDeck
+          ? existingDeck.words
+              .map((w) => w.values?.[frontLang] || w.chinese)
+              .filter(Boolean)
+              .slice(0, 400)
+          : [];
         const { data, error } = await supabase.functions.invoke("generate-topic-deck", {
           body: {
             topic,
@@ -375,6 +395,7 @@ const Index = () => {
             frontLanguage: front.name,
             backLanguage: back.name,
             romanizationLabel: romanCode ? front.romanizationLabel || "transcription" : "",
+            existingWords,
           },
         });
         if (error) throw new Error(error.message || "AI request failed");
@@ -382,7 +403,10 @@ const Index = () => {
         if (!generated.length) throw new Error(data?.error || "The AI returned no words");
 
         const languages = romanCode ? [frontLang, romanCode, backLang] : [frontLang, backLang];
-        const words = generated.map((w) => {
+        const seen = new Set(existingWords.map((s) => s.trim().toLowerCase()));
+        const words = generated
+          .filter((w) => !seen.has(w.front.trim().toLowerCase()))
+          .map((w) => {
           const values: Record<string, string> = { [frontLang]: w.front, [backLang]: w.back };
           if (romanCode && w.romanization) values[romanCode] = w.romanization;
           return {
@@ -394,11 +418,19 @@ const Index = () => {
             partOfSpeech: w.pos || undefined,
           };
         });
-        vocabulary.addDeck(`AI: ${topic}`, words, languages);
+        if (!words.length) throw new Error("No new words this time — try a higher number of words");
+        if (existingDeck) {
+          vocabulary.appendWordsToDeck(existingDeck.id, words);
+        } else {
+          vocabulary.addDeck(`AI: ${topic}`, words, languages);
+        }
         studySession.goToIndex(0);
         setIsFlipped(false);
         setTopicDialogOpen(false);
-        toast({ title: `Created “AI: ${topic}”`, description: `${words.length} words generated` });
+        toast({
+          title: existingDeck ? `Added to “${topic}”` : `Created “AI: ${topic}”`,
+          description: `${words.length} words ${existingDeck ? "added" : "generated"}`,
+        });
       } catch (e: any) {
         toast({
           title: "Couldn't generate the deck",
@@ -712,6 +744,7 @@ const Index = () => {
         frontLanguageName={getLanguage(vocabulary.studyLang).name}
         backLanguageName={getLanguage(vocabulary.translationLang).name}
         generating={generatingTopic}
+        existingTopics={topicOptions}
         onGenerate={handleGenerateTopicDeck}
       />
     </div>

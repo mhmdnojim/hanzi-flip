@@ -7,6 +7,8 @@ interface Body {
   backLanguage: string;
   /** e.g. "Pinyin" for Chinese, "Transliteration" for Arabic — empty when the script is Latin */
   romanizationLabel?: string;
+  /** Words the topic deck already has — never repeat these */
+  existingWords?: string[];
 }
 
 interface GeneratedWord {
@@ -41,9 +43,15 @@ Deno.serve(async (req) => {
     }
 
     const wantsRomanization = !!body.romanizationLabel;
+    const existing = Array.isArray(body.existingWords)
+      ? body.existingWords.filter((w) => typeof w === "string" && w.trim()).slice(0, 400)
+      : [];
     const userPrompt =
       `Create a vocabulary flashcard deck about the topic "${topic}".\n` +
       `Generate exactly ${count} useful, common words or short phrases related to this topic, ordered from most essential to more specific.\n` +
+      (existing.length
+        ? `The deck ALREADY contains these words — do NOT repeat any of them, and do not repeat their close variants. Provide ${count} NEW additional words on the same topic:\n${existing.join(", ")}\n`
+        : "") +
       `For each entry provide:\n` +
       `- "front": the word in ${body.frontLanguage} (native script)\n` +
       (wantsRomanization
