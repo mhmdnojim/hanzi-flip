@@ -33,6 +33,7 @@ function visibleExtraColumns(extra?: Record<string, string>): [string, string][]
   return Object.entries(extra).filter(([key]) => {
     const k = key.trim().toLowerCase();
     if (/\b(latin|romani[sz]ation|transliteration|pinyin)\b/.test(k)) return false;
+    if (/\b(part\s*of\s*speech|pos|word\s*type)\b/.test(k)) return false;
     return !detectLanguageFromHeader(key);
   });
 }
