@@ -489,7 +489,7 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
           </div>
 
           {/* Top Right: Scoring + Favorite */}
-          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-1.5 sm:gap-2 z-30">
+          <div className="absolute top-10 right-3 sm:top-12 sm:right-4 flex items-center gap-1.5 sm:gap-2 z-30">
             <Tooltip>
               <TooltipTrigger asChild>
                 <button onClick={(e) => { e.stopPropagation(); onIncorrect(); }}
@@ -650,7 +650,7 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button onClick={(e) => { e.stopPropagation(); onSpeakChinese(); }}
-                        className="mt-3 p-2 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
+                        className="mt-12 p-2 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
                         <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </button>
                     </TooltipTrigger>
@@ -797,7 +797,7 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
                       Add example translation
                     </button>
                   )}
-                  <div className="mt-3 flex flex-wrap items-center justify-center gap-2 max-w-[92%]" onClick={(e) => e.stopPropagation()}>
+                  <div className="mt-12 flex flex-wrap items-center justify-center gap-2 max-w-[92%]" onClick={(e) => e.stopPropagation()}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button onClick={(e) => { e.stopPropagation(); onSpeakEnglish(); }}
