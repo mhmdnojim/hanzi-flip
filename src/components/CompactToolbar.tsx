@@ -124,7 +124,14 @@ export function CompactToolbar(props: CompactToolbarProps) {
   const [pickedLibraryId, setPickedLibraryId] = useState<string | null>(null);
   const activeLibraryId = pickedLibraryId ?? deckLibraryId ?? null;
   const activeLibrary = BUILT_IN_LIBRARIES.find((l) => l.id === activeLibraryId);
-  const setLibraryId = (id: string) => setPickedLibraryId(id);
+  const setLibraryId = (id: string) => {
+    setPickedLibraryId(id);
+    const library = BUILT_IN_LIBRARIES.find((l) => l.id === id);
+    const currentKey = currentDeck?.builtInKey ?? "";
+    if (library && !currentKey.startsWith(`${id}:`)) {
+      props.onSelectBuiltIn(id, library.levels[0]);
+    }
+  };
   const fileLabel = activeLibrary ? activeLibrary.name : props.deckName;
 
 
