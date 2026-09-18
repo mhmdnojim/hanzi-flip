@@ -679,25 +679,27 @@ export function FlashcardView(props: FlashcardViewProps) {
                       style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
                     />
                   ) : (
-                    <div className="relative flex items-start justify-center gap-2">
-                      {showPinyin && backTranscription && (
-                        <motion.p
-                          initial={{ opacity: 0, y: -6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
+                    <div className="flex items-start justify-center gap-2">
+                      <div className="relative flex flex-col items-center">
+                        {showPinyin && backTranscription && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
+                          >
+                            {backTranscription}
+                          </motion.p>
+                        )}
+                        <p
+                          ref={backWordRef}
+                          className="font-body text-white font-bold leading-tight px-2"
+                          style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
+                          onDoubleClick={(e) => { e.stopPropagation(); startEdit("english", word.english); }}
+                          title={onEditWord ? "Double-click to edit" : undefined}
                         >
-                          {backTranscription}
-                        </motion.p>
-                      )}
-                      <p
-                        ref={backWordRef}
-                        className="font-body text-white font-bold leading-tight px-2"
-                        style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
-                        onDoubleClick={(e) => { e.stopPropagation(); startEdit("english", word.english); }}
-                        title={onEditWord ? "Double-click to edit" : undefined}
-                      >
-                        {displayedTranslation}
-                      </p>
+                          {displayedTranslation}
+                        </p>
+                      </div>
                       <div className="flex flex-col gap-1.5 mt-1 shrink-0">
                         {onTogglePinyin && (
                           <Tooltip>
