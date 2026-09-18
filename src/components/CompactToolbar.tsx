@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Languages,
   Type as TypeIcon,
+  Pencil,
   Trash2,
   Palette,
   FileSpreadsheet,
