@@ -7,7 +7,7 @@ import {
   Quote, MessageSquareText, MessageSquareOff,
   Pause, Play, ArrowUp, ArrowDown, Trash2, Settings2, List,
   Save, Sparkles, Loader2, ChevronDown,
-  EyeOff, Pencil, ListChecks, Layers,
+  EyeOff, ListChecks, Layers,
 } from "lucide-react";
 import {
   VocabularyWord, AutoplayMode,
@@ -221,13 +221,17 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
   useImperativeHandle(ref, () => ({
     startEditCurrentWord: () => {
       if (!onEditWord) return;
+      if (editingField) {
+        commitEdit();
+        return;
+      }
       if (isFlipped) {
         startEdit("english", word.english, backTranscription);
       } else {
         startEdit("chinese", word.chinese, word.pinyin || "");
       }
     },
-  }), [onEditWord, isFlipped, word.english, word.chinese, word.pinyin, backTranscription]);
+  }), [onEditWord, editingField, editDraft, editLatinDraft, isFlipped, word.english, word.chinese, word.pinyin, backTranscription]);
 
   const isRtl = (label: string) =>
     !!LANGUAGES.find((l) => l.name === label || l.native === label || l.short === label)?.rtl;
@@ -619,19 +623,6 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
                         )}
                       </div>
                       <div className="flex flex-col gap-1.5 mt-1 shrink-0">
-                        {onEditWord && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); startEdit("chinese", word.chinese, word.pinyin || ""); }}
-                                className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Edit {originalLabel}</p></TooltipContent>
-                          </Tooltip>
-                        )}
                         {hasMultipleFront && (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -745,19 +736,6 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
                         </p>
                       </div>
                       <div className="flex flex-col gap-1.5 mt-1 shrink-0">
-                        {onEditWord && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); startEdit("english", word.english, backTranscription); }}
-                                className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Edit {translationLabel}</p></TooltipContent>
-                          </Tooltip>
-                        )}
                         {hasMultipleBack && (
                           <Tooltip>
                             <TooltipTrigger asChild>

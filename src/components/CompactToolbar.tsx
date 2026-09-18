@@ -437,7 +437,7 @@ export function CompactToolbar(props: CompactToolbarProps) {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Edit current word</p>
+            <p>Edit or save current word</p>
           </TooltipContent>
         </Tooltip>
 
