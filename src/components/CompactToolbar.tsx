@@ -124,20 +124,29 @@ export function CompactToolbar(props: CompactToolbarProps) {
   const canDelete = props.decks.length > 1 || props.currentDeckId !== "sample";
 
   // Which built-in library + level the current deck came from (if any)
+  const TOPICS_LIBRARY_ID = "topics";
+  const isTopicDeck = (d?: VocabularyDeck) => !!d && !d.builtInKey && d.name.startsWith("AI: ");
+  const topicName = (d: VocabularyDeck) => d.name.replace(/^AI:\s*/, "");
+  const topicDecks = props.decks.filter(isTopicDeck);
   const currentDeck = props.decks.find((d) => d.id === props.currentDeckId);
   const [deckLibraryId, activeLevel] = (currentDeck?.builtInKey ?? "").split(":");
   const [pickedLibraryId, setPickedLibraryId] = useState<string | null>(null);
-  const activeLibraryId = pickedLibraryId ?? deckLibraryId ?? null;
+  const activeLibraryId = pickedLibraryId ?? (isTopicDeck(currentDeck) ? TOPICS_LIBRARY_ID : deckLibraryId) ?? null;
+  const isTopicsLibrary = activeLibraryId === TOPICS_LIBRARY_ID;
   const activeLibrary = BUILT_IN_LIBRARIES.find((l) => l.id === activeLibraryId);
   const setLibraryId = (id: string) => {
     setPickedLibraryId(id);
+    if (id === TOPICS_LIBRARY_ID) {
+      if (!isTopicDeck(currentDeck) && topicDecks[0]) props.onDeckChange(topicDecks[0].id);
+      return;
+    }
     const library = BUILT_IN_LIBRARIES.find((l) => l.id === id);
     const currentKey = currentDeck?.builtInKey ?? "";
     if (library && !currentKey.startsWith(`${id}:`)) {
       props.onSelectBuiltIn(id, library.levels[0]);
     }
   };
-  const fileLabel = activeLibrary ? activeLibrary.name : props.deckName;
+  const fileLabel = isTopicsLibrary ? "AI Topics" : activeLibrary ? activeLibrary.name : props.deckName;
 
 
 
