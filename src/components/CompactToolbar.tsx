@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
+
 import {
   Shuffle,
   ListOrdered,
@@ -116,6 +118,17 @@ export function CompactToolbar(props: CompactToolbarProps) {
   const activeTheme = getTheme(props.themeId);
   const canDelete = props.decks.length > 1 || props.currentDeckId !== "sample";
 
+  // Which built-in library + level the current deck came from (if any)
+  const currentDeck = props.decks.find((d) => d.id === props.currentDeckId);
+  const [deckLibraryId, activeLevel] = (currentDeck?.builtInKey ?? "").split(":");
+  const [pickedLibraryId, setPickedLibraryId] = useState<string | null>(null);
+  const activeLibraryId = pickedLibraryId ?? deckLibraryId ?? null;
+  const activeLibrary = BUILT_IN_LIBRARIES.find((l) => l.id === activeLibraryId);
+  const setLibraryId = (id: string) => setPickedLibraryId(id);
+  const fileLabel = activeLibrary ? activeLibrary.name : props.deckName;
+
+
+
   return (
     <TooltipProvider delayDuration={300}>
       <motion.div
@@ -123,7 +136,7 @@ export function CompactToolbar(props: CompactToolbarProps) {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2"
       >
-        {/* Level / file selector (HSK1, HSK2, …) */}
+        {/* File / library selector */}
         <DropdownMenu>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -131,43 +144,31 @@ export function CompactToolbar(props: CompactToolbarProps) {
                 <Button 
                   variant="secondary" 
                   size="sm" 
-                  className="h-8 sm:h-9 px-2 sm:px-3 gap-1 text-xs sm:text-sm rounded-full max-w-[10rem]"
+                  className="h-8 sm:h-9 px-2 sm:px-3 gap-1 text-xs sm:text-sm rounded-full max-w-[12rem]"
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{props.deckName}</span>
+                  <span className="truncate">{fileLabel}</span>
                   <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Select level / vocabulary file</p>
+              <p>Select vocabulary file</p>
             </TooltipContent>
           </Tooltip>
           <DropdownMenuContent className="max-h-[70vh] overflow-y-auto">
-            {BUILT_IN_LIBRARIES.map((library, libraryIndex) => (
-              <div key={library.id}>
-                {libraryIndex > 0 && <DropdownMenuSeparator />}
-                <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                  {library.name}
-                </DropdownMenuLabel>
-                {library.levels.map((level) => {
-                  const key = `${library.id}:${level}`;
-                  return (
-                    <DropdownMenuItem
-                      key={level}
-                      onClick={() => props.onSelectBuiltIn(library.id, level)}
-                      disabled={props.loadingBuiltIn === key}
-                      className="gap-2"
-                    >
-                      <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{level}</span>
-                      {props.loadingBuiltIn === key && (
-                        <span className="ml-auto text-xs text-muted-foreground">loading…</span>
-                      )}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </div>
+            <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Included libraries
+            </DropdownMenuLabel>
+            {BUILT_IN_LIBRARIES.map((library) => (
+              <DropdownMenuItem
+                key={library.id}
+                onClick={() => setLibraryId(library.id)}
+                className={cn("gap-2", library.id === activeLibraryId && "bg-accent")}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{library.name}</span>
+              </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -184,6 +185,48 @@ export function CompactToolbar(props: CompactToolbarProps) {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Level selector for the chosen library */}
+        {activeLibrary && (
+          <DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-8 sm:h-9 px-2 sm:px-3 gap-1 text-xs sm:text-sm rounded-full"
+                  >
+                    <span className="truncate">{activeLevel ?? "Level"}</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Select level</p>
+              </TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent className="max-h-[70vh] overflow-y-auto">
+              {activeLibrary.levels.map((level) => {
+                const key = `${activeLibrary.id}:${level}`;
+                return (
+                  <DropdownMenuItem
+                    key={level}
+                    onClick={() => props.onSelectBuiltIn(activeLibrary.id, level)}
+                    disabled={props.loadingBuiltIn === key}
+                    className={cn("gap-2", level === activeLevel && "bg-accent")}
+                  >
+                    <span className="truncate">{level}</span>
+                    {props.loadingBuiltIn === key && (
+                      <span className="ml-auto text-xs text-muted-foreground">loading…</span>
+                    )}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
 
         {/* Upload */}
         <Tooltip>
