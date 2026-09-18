@@ -130,6 +130,7 @@ export function useVocabulary() {
     words: VocabularyWord[],
     languages?: string[],
     columns?: VocabularyDeck["columns"],
+    builtInKey?: string,
   ) => {
     const newDeck: VocabularyDeck = {
       id: `deck_${Date.now()}`,
@@ -138,6 +139,7 @@ export function useVocabulary() {
       createdAt: new Date(),
       languages,
       columns,
+      builtInKey,
     };
     setDecks((prev) => [...prev, newDeck]);
     setCurrentDeckId(newDeck.id);
