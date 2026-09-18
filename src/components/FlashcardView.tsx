@@ -740,7 +740,7 @@ export function FlashcardView(props: FlashcardViewProps) {
                           ref={backWordRef}
                           className="font-body text-white font-bold leading-tight px-2"
                           style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
-                          onDoubleClick={(e) => { e.stopPropagation(); startEdit("english", word.english); }}
+                          onDoubleClick={(e) => { e.stopPropagation(); startEdit("english", word.english, backTranscription); }}
                           title={onEditWord ? "Double-click to edit" : undefined}
                         >
                           {displayedTranslation}
@@ -767,7 +767,7 @@ export function FlashcardView(props: FlashcardViewProps) {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={(e) => { e.stopPropagation(); startEdit("english", word.english); }}
+                                onClick={(e) => { e.stopPropagation(); startEdit("english", word.english, backTranscription); }}
                                 className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
