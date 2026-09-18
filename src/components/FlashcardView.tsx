@@ -158,13 +158,25 @@ export function FlashcardView(props: FlashcardViewProps) {
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const suppressClickRef = useRef(false);
 
-  const startEdit = (field: "english" | "chinese" | "exampleTranslation", value: string) => {
+  const startEdit = (field: "english" | "chinese" | "exampleTranslation", value: string, latin = "") => {
     if (!onEditWord) return;
     setEditingField(field);
     setEditDraft(value);
+    setEditLatinDraft(latin);
   };
   const commitEdit = () => {
-    if (editingField && onEditWord) onEditWord({ [editingField]: editDraft } as Partial<VocabularyWord>);
+    if (editingField && onEditWord) {
+      const patch = { [editingField]: editDraft } as Partial<VocabularyWord>;
+      if (editingField === "chinese") {
+        patch.pinyin = editLatinDraft;
+        const code = studyLangCode ? romanizationCodeFor(studyLangCode) : null;
+        if (code) patch.values = { ...(word.values || {}), [code]: editLatinDraft };
+      }
+      if (editingField === "english" && backTranscriptionCode) {
+        patch.values = { ...(word.values || {}), [backTranscriptionCode]: editLatinDraft };
+      }
+      onEditWord(patch);
+    }
     setEditingField(null);
   };
 
