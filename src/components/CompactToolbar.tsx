@@ -423,6 +423,24 @@ export function CompactToolbar(props: CompactToolbarProps) {
           </TooltipContent>
         </Tooltip>
 
+        {/* Edit current word */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full"
+              onClick={props.onEditCurrentWord}
+              disabled={!props.onEditCurrentWord}
+            >
+              <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Edit current word</p>
+          </TooltipContent>
+        </Tooltip>
+
         {/* Text size — cycles S → M → L → XL */}
         <Tooltip>
           <TooltipTrigger asChild>
