@@ -840,8 +840,8 @@ export function FlashcardView(props: FlashcardViewProps) {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button onClick={(e) => { e.stopPropagation(); onSpeakEnglish(); }}
-                          className="p-2 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors shrink-0">
-                          <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors shrink-0">
+                          <Volume2 className="w-4 h-4 text-white" />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent><p>Speak {translationLabel}</p></TooltipContent>
@@ -849,7 +849,7 @@ export function FlashcardView(props: FlashcardViewProps) {
 
                     {/* Show extra columns on the back */}
                     {visibleExtraColumns(word.extraColumns).map(([k, v]) => (
-                      <div key={k} className="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/20 flex items-baseline gap-2 whitespace-nowrap">
+                      <div key={k} className="inline-flex h-8 items-center bg-white/10 backdrop-blur-sm rounded-lg px-3 border border-white/20 gap-2 whitespace-nowrap shrink-0">
                         <span className="text-[10px] uppercase tracking-wider text-white/60 whitespace-nowrap">{k}</span>
                         <span className="text-xs sm:text-sm text-white/90 whitespace-nowrap">{v}</span>
                       </div>
