@@ -116,7 +116,7 @@ export interface FlashcardViewHandle {
 export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>(function FlashcardView(props, ref) {
   const {
     word, isFlipped, onFlip, onNext, onPrevious, onToggleFavorite,
-    showPinyin, onTogglePinyin, showChineseFirst, fontSize, onFontSizeChange,
+    showPinyin, showChineseFirst, fontSize, onFontSizeChange,
     onSpeakChinese, onSpeakEnglish,
     autoplayMode, onAutoplayModeChange, isAutoplayActive,
     autoplayRepeatCount, onAutoplayRepeatCountChange,
