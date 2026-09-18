@@ -33,6 +33,7 @@ function visibleExtraColumns(extra?: Record<string, string>): [string, string][]
   return Object.entries(extra).filter(([key]) => {
     const k = key.trim().toLowerCase();
     if (/\b(latin|romani[sz]ation|transliteration|pinyin)\b/.test(k)) return false;
+    if (/\b(part\s*of\s*speech|pos|word\s*type)\b/.test(k)) return false;
     return !detectLanguageFromHeader(key);
   });
 }
@@ -807,7 +808,13 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
                       <TooltipContent><p>Speak {translationLabel}</p></TooltipContent>
                     </Tooltip>
 
-                    {/* Show extra columns on the back */}
+                    {word.partOfSpeech && (
+                      <span className="inline-flex h-8 items-center bg-white/10 backdrop-blur-sm rounded-lg px-3 border border-white/20 text-xs sm:text-sm text-white/90 whitespace-nowrap shrink-0">
+                        {word.partOfSpeech}
+                      </span>
+                    )}
+
+                    {/* Show remaining extra columns on the back */}
                     {visibleExtraColumns(word.extraColumns).map(([k, v]) => (
                       <div key={k} className="inline-flex h-8 items-center bg-white/10 backdrop-blur-sm rounded-lg px-3 border border-white/20 gap-2 whitespace-nowrap shrink-0">
                         <span className="text-[10px] uppercase tracking-wider text-white/60 whitespace-nowrap">{k}</span>
