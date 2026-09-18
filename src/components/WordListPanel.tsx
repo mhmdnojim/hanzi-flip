@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckSquare, Square, List, Search, Type, Filter, ChevronDown, ChevronUp, Wand2, Loader2 } from "lucide-react";
+import { CheckSquare, Square, List, Search, Type, Filter, ChevronDown, ChevronUp, Wand2, Loader2, ArrowRight } from "lucide-react";
 import { VocabularyWord } from "@/types/vocabulary";
 import { getHSKLevel, getCharacterCount, getFrequencyTier } from "@/lib/hskWordList";
+import { getLanguage, romanizationCodeFor } from "@/utils/languages";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
