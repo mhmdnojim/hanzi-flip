@@ -24,7 +24,7 @@ import { setDeckFileHandle, saveDeckToExcel, downloadDeckAsExcel } from "@/lib/e
 import { ToastAction } from "@/components/ui/toast";
 import { getLanguage } from "@/utils/languages";
 import {
-  applyTheme, loadThemeId, saveThemeId,
+  applyTheme, getTheme, loadThemeId, saveThemeId,
   FONT_SIZE_PX, type FontSizePreset,
 } from "@/utils/themes";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,8 +37,8 @@ const Index = () => {
   const [showChineseFirst, setShowChineseFirst] = useState(true);
   const [fontSizePreset, setFontSizePreset] = useState<FontSizePreset>("medium");
   const [fontSize, setFontSize] = useState(FONT_SIZE_PX.medium);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [themeId, setThemeId] = useState<string>(() => loadThemeId());
+  const isDarkMode = getTheme(themeId).dark;
 
   useEffect(() => {
     applyTheme(themeId);
@@ -587,7 +587,7 @@ const Index = () => {
             onLanguageGapChange={setLanguageGap}
             // Dark mode
             isDarkMode={isDarkMode}
-            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+            onToggleDarkMode={() => setThemeId(isDarkMode ? "paper" : "midnight")}
             // Scoring
             onCorrect={handleCorrect}
             onIncorrect={handleIncorrect}
