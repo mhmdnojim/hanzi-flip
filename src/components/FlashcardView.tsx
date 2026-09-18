@@ -114,7 +114,7 @@ interface FlashcardViewProps {
 export function FlashcardView(props: FlashcardViewProps) {
   const {
     word, isFlipped, onFlip, onNext, onPrevious, onToggleFavorite,
-    showPinyin, showChineseFirst, fontSize, onFontSizeChange,
+    showPinyin, onTogglePinyin, showChineseFirst, fontSize, onFontSizeChange,
     onSpeakChinese, onSpeakEnglish,
     autoplayMode, onAutoplayModeChange, isAutoplayActive,
     autoplayRepeatCount, onAutoplayRepeatCountChange,
