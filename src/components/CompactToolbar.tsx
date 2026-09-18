@@ -116,6 +116,18 @@ export function CompactToolbar(props: CompactToolbarProps) {
   const activeTheme = getTheme(props.themeId);
   const canDelete = props.decks.length > 1 || props.currentDeckId !== "sample";
 
+  // Which built-in library + level the current deck came from (if any)
+  const currentDeck = props.decks.find((d) => d.id === props.currentDeckId);
+  const [deckLibraryId, activeLevel] = (currentDeck?.builtInKey ?? "").split(":");
+  const [pickedLibraryId, setPickedLibraryId] = useState<string | null>(null);
+  const activeLibraryId = pickedLibraryId ?? deckLibraryId ?? null;
+  const activeLibrary = BUILT_IN_LIBRARIES.find((l) => l.id === activeLibraryId);
+  const setLibraryId = (id: string) => setPickedLibraryId(id);
+  const fileLabel = activeLibrary && activeLibraryId !== deckLibraryId
+    ? activeLibrary.name
+    : props.deckName;
+
+
   return (
     <TooltipProvider delayDuration={300}>
       <motion.div
