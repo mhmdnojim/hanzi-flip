@@ -598,7 +598,7 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
                       />
                     </div>
                   ) : (
-                    <div className="flex flex-wrap items-center justify-center gap-2">
+                    <div className="flex flex-col items-center gap-3">
                       <div className="relative inline-flex flex-col items-center">
                         {/* Transcription floats above the word so toggling it never shifts the layout */}
                         {showPinyin && word.pinyin && (
@@ -623,7 +623,7 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
                           </p>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                      <div className="flex flex-wrap items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
                         {hasMultipleFront && (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -650,6 +650,11 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
                           </TooltipTrigger>
                           <TooltipContent><p>Speak {originalLabel}</p></TooltipContent>
                         </Tooltip>
+                        {word.partOfSpeech && (
+                          <span className="inline-flex h-8 items-center bg-white/10 backdrop-blur-sm rounded-lg px-3 border border-white/20 text-xs sm:text-sm text-white/90 whitespace-nowrap">
+                            {word.partOfSpeech}
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
