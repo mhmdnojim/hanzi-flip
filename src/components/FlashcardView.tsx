@@ -8,6 +8,7 @@ import {
   Pause, Play, ArrowUp, ArrowDown, Trash2, Settings2, List,
   Save, Sparkles, Loader2, ChevronDown,
   EyeOff, Pencil, ListChecks, Layers,
+  Type as TypeIcon,
 } from "lucide-react";
 import {
   VocabularyWord, AutoplayMode,
@@ -24,7 +25,7 @@ import {
   DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { sequenceSignature, type SequencePreset } from "@/lib/sequencePresets";
-import { LANGUAGES, detectLanguageFromHeader } from "@/utils/languages";
+import { LANGUAGES, detectLanguageFromHeader, romanizationCodeFor } from "@/utils/languages";
 
 /** Extra spreadsheet columns worth showing: skip any column that is really a
  * language / transliteration column (those belong to the language selectors). */
@@ -47,6 +48,7 @@ interface FlashcardViewProps {
   onPrevious: () => void;
   onToggleFavorite: () => void;
   showPinyin: boolean;
+  onTogglePinyin?: () => void;
   showChineseFirst: boolean;
   fontSize: number;
   onFontSizeChange: (size: number) => void;
@@ -112,7 +114,7 @@ interface FlashcardViewProps {
 export function FlashcardView(props: FlashcardViewProps) {
   const {
     word, isFlipped, onFlip, onNext, onPrevious, onToggleFavorite,
-    showPinyin, showChineseFirst, fontSize, onFontSizeChange,
+    showPinyin, onTogglePinyin, showChineseFirst, fontSize, onFontSizeChange,
     onSpeakChinese, onSpeakEnglish,
     autoplayMode, onAutoplayModeChange, isAutoplayActive,
     autoplayRepeatCount, onAutoplayRepeatCountChange,
@@ -185,6 +187,18 @@ export function FlashcardView(props: FlashcardViewProps) {
       .filter((p): p is string => !!p);
     return kept.length ? joinMeanings(kept) : word.pinyin;
   }, [word.pinyin, hasMultipleFront, frontMeanings, frontSel.selected]);
+
+  // Transcription for the translation (back) side, looked up from the multi-language map
+  const translationLangCode = useMemo(
+    () => LANGUAGES.find((l) => l.name === translationLabel || l.native === translationLabel || l.short === translationLabel)?.code ?? null,
+    [translationLabel]
+  );
+  const backTranscription = useMemo(() => {
+    if (!translationLangCode) return "";
+    const code = romanizationCodeFor(translationLangCode);
+    return code && word.values?.[code] ? word.values[code] : "";
+  }, [word.values, translationLangCode]);
+
   const isRtl = (label: string) =>
     !!LANGUAGES.find((l) => l.name === label || l.native === label || l.short === label)?.rtl;
 
@@ -558,6 +572,22 @@ export function FlashcardView(props: FlashcardViewProps) {
                         </p>
                       )}
                       <div className="flex flex-col gap-1.5 mt-1 shrink-0">
+                        {onTogglePinyin && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onTogglePinyin(); }}
+                                className={cn(
+                                  "p-1.5 rounded-full transition-colors",
+                                  showPinyin ? "bg-pink-500/80 text-white" : "bg-white/20 hover:bg-white/30 text-white"
+                                )}
+                              >
+                                <TypeIcon className="w-3.5 h-3.5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{showPinyin ? "Hide" : "Show"} Latin transcription</p></TooltipContent>
+                          </Tooltip>
+                        )}
                         {onEditWord && (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -648,6 +678,15 @@ export function FlashcardView(props: FlashcardViewProps) {
                     />
                   ) : (
                     <div className="relative flex items-start justify-center gap-2">
+                      {showPinyin && backTranscription && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
+                        >
+                          {backTranscription}
+                        </motion.p>
+                      )}
                       <p
                         ref={backWordRef}
                         className="font-body text-white font-bold leading-tight px-2"
@@ -658,6 +697,22 @@ export function FlashcardView(props: FlashcardViewProps) {
                         {displayedTranslation}
                       </p>
                       <div className="flex flex-col gap-1.5 mt-1 shrink-0">
+                        {onTogglePinyin && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onTogglePinyin(); }}
+                                className={cn(
+                                  "p-1.5 rounded-full transition-colors",
+                                  showPinyin ? "bg-pink-500/80 text-white" : "bg-white/20 hover:bg-white/30 text-white"
+                                )}
+                              >
+                                <TypeIcon className="w-3.5 h-3.5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{showPinyin ? "Hide" : "Show"} Latin transcription</p></TooltipContent>
+                          </Tooltip>
+                        )}
                         {onEditWord && (
                           <Tooltip>
                             <TooltipTrigger asChild>
