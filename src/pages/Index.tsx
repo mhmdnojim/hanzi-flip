@@ -514,6 +514,7 @@ const Index = () => {
           onFontSizePresetChange={handleFontSizePresetChange}
           showPinyin={showPinyin}
           onTogglePinyin={() => setShowPinyin(!showPinyin)}
+          onEditCurrentWord={() => flashcardRef.current?.startEditCurrentWord()}
           showChineseFirst={showChineseFirst}
           onResetFlip={() => setIsFlipped(false)}
           onToggleChineseFirst={() => setShowChineseFirst(!showChineseFirst)}
