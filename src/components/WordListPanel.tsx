@@ -141,7 +141,8 @@ interface WordListPanelProps {
 const STORAGE_KEY = "flashcardWordListFilters.v1";
 
 export function WordListPanel({
-  words: allWords, excludedIds, onExcludedChange, currentWordId, onJumpTo, open, onClose,
+  words: allWords, excludedIds, onExcludedChange, currentWordId, onJumpTo,
+  studyLang = "zh", translationLang = "en", open, onClose,
 }: WordListPanelProps) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
