@@ -182,18 +182,6 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
     setEditingField(null);
   };
 
-  // Expose edit trigger to the parent toolbar
-  useImperativeHandle(ref, () => ({
-    startEditCurrentWord: () => {
-      if (!onEditWord) return;
-      if (isFlipped) {
-        startEdit("english", word.english, backTranscription);
-      } else {
-        startEdit("chinese", word.chinese, word.pinyin || "");
-      }
-    },
-  }), [onEditWord, isFlipped, word.english, word.chinese, word.pinyin, backTranscription]);
-
   // ---- Multiple meanings — shared for BOTH sides / any language ----
   const frontMeanings = splitMeanings(word.chinese || "");
   const backMeanings = splitMeanings(word.english || "");
