@@ -8,6 +8,8 @@ export interface BuiltInLibrary {
   name: string;
   url: string;
   levels: string[];
+  /** Bump when workbook-derived fields change so saved copies reload from the file. */
+  version: string;
 }
 
 export const BUILT_IN_LIBRARIES: BuiltInLibrary[] = [
@@ -16,12 +18,14 @@ export const BUILT_IN_LIBRARIES: BuiltInLibrary[] = [
     name: "New HSK 1–6 (multilingual)",
     url: "/libraries/new-hsk-1-6.xlsx",
     levels: ["HSK1", "HSK2", "HSK3", "HSK4", "HSK5", "HSK6"],
+    version: "latin-file-v1",
   },
   {
     id: "english-dictionary",
     name: "English Dictionary A1–C1",
     url: "/libraries/english-dictionary-a1-c1.xlsx",
     levels: ["A1", "A2", "B1", "B2", "C1"],
+    version: "latin-file-v1",
   },
 ];
 

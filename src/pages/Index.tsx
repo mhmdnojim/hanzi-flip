@@ -10,7 +10,7 @@ import { useStudySession } from "@/hooks/useStudySession";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { previewExcelFile, buildWordsFromMapping, type SheetPreview } from "@/utils/excelParser";
 import { parseSenseWorkbook } from "@/utils/senseWorkbook";
-import { loadBuiltInLevel } from "@/lib/builtInLibraries";
+import { getBuiltInLibrary, loadBuiltInLevel } from "@/lib/builtInLibraries";
 import { ColumnMappingDialog } from "@/components/ColumnMappingDialog";
 import { useToast } from "@/hooks/use-toast";
 import { CustomSequenceStep } from "@/types/vocabulary";
@@ -347,7 +347,8 @@ const Index = () => {
   const [loadingBuiltIn, setLoadingBuiltIn] = useState<string | null>(null);
   const handleSelectBuiltIn = useCallback(
     async (libraryId: string, level: string) => {
-      const key = `${libraryId}:${level}`;
+      const library = getBuiltInLibrary(libraryId);
+      const key = `${libraryId}:${level}:${library?.version ?? "current"}`;
       const existing = vocabulary.decks.find((d) => d.builtInKey === key);
       if (existing) {
         vocabulary.setCurrentDeckId(existing.id);
@@ -370,6 +371,16 @@ const Index = () => {
     },
     [vocabulary, toast],
   );
+
+  // Reload older saved built-in decks so Latin text always reflects the workbook cells.
+  useEffect(() => {
+    const builtInKey = vocabulary.currentDeck.builtInKey;
+    if (!builtInKey) return;
+    const [libraryId, level, savedVersion] = builtInKey.split(":");
+    const library = getBuiltInLibrary(libraryId);
+    if (!library || !level || savedVersion === library.version || loadingBuiltIn) return;
+    void handleSelectBuiltIn(libraryId, level);
+  }, [vocabulary.currentDeck.builtInKey, handleSelectBuiltIn, loadingBuiltIn]);
 
   const handleConfirmMapping = useCallback(
     (mapping: Record<string, string | null>) => {
