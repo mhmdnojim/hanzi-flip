@@ -395,6 +395,8 @@ const Index = () => {
           };
         });
         vocabulary.addDeck(`AI: ${topic}`, words, languages);
+        studySession.goToIndex(0);
+        setIsFlipped(false);
         setTopicDialogOpen(false);
         toast({ title: `Created “AI: ${topic}”`, description: `${words.length} words generated` });
       } catch (e: any) {
