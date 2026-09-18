@@ -150,6 +150,7 @@ export function FlashcardView(props: FlashcardViewProps) {
   const [pausedMode, setPausedMode] = useState<AutoplayMode | null>(null);
   const [editingField, setEditingField] = useState<"english" | "chinese" | "exampleTranslation" | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [editLatinDraft, setEditLatinDraft] = useState("");
   const [meaningsSide, setMeaningsSide] = useState<"front" | "back" | null>(null);
   const [meaningsAnchor, setMeaningsAnchor] = useState<DOMRect | null>(null);
   const frontWordRef = useRef<HTMLParagraphElement>(null);
@@ -157,13 +158,25 @@ export function FlashcardView(props: FlashcardViewProps) {
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const suppressClickRef = useRef(false);
 
-  const startEdit = (field: "english" | "chinese" | "exampleTranslation", value: string) => {
+  const startEdit = (field: "english" | "chinese" | "exampleTranslation", value: string, latin = "") => {
     if (!onEditWord) return;
     setEditingField(field);
     setEditDraft(value);
+    setEditLatinDraft(latin);
   };
   const commitEdit = () => {
-    if (editingField && onEditWord) onEditWord({ [editingField]: editDraft } as Partial<VocabularyWord>);
+    if (editingField && onEditWord) {
+      const patch = { [editingField]: editDraft } as Partial<VocabularyWord>;
+      if (editingField === "chinese") {
+        patch.pinyin = editLatinDraft;
+        const code = studyLangCode ? romanizationCodeFor(studyLangCode) : null;
+        if (code) patch.values = { ...(word.values || {}), [code]: editLatinDraft };
+      }
+      if (editingField === "english" && backTranscriptionCode) {
+        patch.values = { ...(word.values || {}), [backTranscriptionCode]: editLatinDraft };
+      }
+      onEditWord(patch);
+    }
     setEditingField(null);
   };
 
@@ -193,11 +206,14 @@ export function FlashcardView(props: FlashcardViewProps) {
     () => LANGUAGES.find((l) => l.name === translationLabel || l.native === translationLabel || l.short === translationLabel)?.code ?? null,
     [translationLabel]
   );
+  const studyLangCode = useMemo(
+    () => LANGUAGES.find((l) => l.name === originalLabel || l.native === originalLabel || l.short === originalLabel)?.code ?? null,
+    [originalLabel]
+  );
+  const backTranscriptionCode = translationLangCode ? romanizationCodeFor(translationLangCode) : null;
   const backTranscription = useMemo(() => {
-    if (!translationLangCode) return "";
-    const code = romanizationCodeFor(translationLangCode);
-    return code && word.values?.[code] ? word.values[code] : "";
-  }, [word.values, translationLangCode]);
+    return backTranscriptionCode && word.values?.[backTranscriptionCode] ? word.values[backTranscriptionCode] : "";
+  }, [word.values, backTranscriptionCode]);
 
   const isRtl = (label: string) =>
     !!LANGUAGES.find((l) => l.name === label || l.native === label || l.short === label)?.rtl;
@@ -533,20 +549,35 @@ export function FlashcardView(props: FlashcardViewProps) {
               {showChinese ? (
                 <>
                   {editingField === "chinese" ? (
-                    <input
-                      autoFocus
-                      value={editDraft}
-                      onChange={(e) => setEditDraft(e.target.value)}
+                    <div
+                      className="flex flex-col items-center gap-1.5 w-full"
                       onClick={(e) => e.stopPropagation()}
-                      onBlur={commitEdit}
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === "Enter") commitEdit();
-                        if (e.key === "Escape") setEditingField(null);
-                      }}
-                      className="font-chinese font-bold leading-tight px-4 text-center bg-white/15 rounded-xl border border-white/30 outline-none text-white w-full"
-                      style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}
-                    />
+                      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) commitEdit(); }}
+                    >
+                      <input
+                        autoFocus
+                        value={editLatinDraft}
+                        onChange={(e) => setEditLatinDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter") commitEdit();
+                          if (e.key === "Escape") setEditingField(null);
+                        }}
+                        placeholder="Latin transcription"
+                        className="px-3 text-center bg-white/10 rounded-lg border border-white/20 outline-none text-white/80 text-lg sm:text-xl italic w-full"
+                      />
+                      <input
+                        value={editDraft}
+                        onChange={(e) => setEditDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter") commitEdit();
+                          if (e.key === "Escape") setEditingField(null);
+                        }}
+                        className="font-chinese font-bold leading-tight px-4 text-center bg-white/15 rounded-xl border border-white/30 outline-none text-white w-full"
+                        style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}
+                      />
+                    </div>
                   ) : (
                     <div className="flex items-start justify-center gap-2">
                       <div className="relative flex flex-col items-center">
@@ -594,7 +625,7 @@ export function FlashcardView(props: FlashcardViewProps) {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={(e) => { e.stopPropagation(); startEdit("chinese", word.chinese); }}
+                                onClick={(e) => { e.stopPropagation(); startEdit("chinese", word.chinese, word.pinyin || ""); }}
                                 className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
@@ -664,20 +695,35 @@ export function FlashcardView(props: FlashcardViewProps) {
               ) : (
                 <>
                   {editingField === "english" ? (
-                    <input
-                      autoFocus
-                      value={editDraft}
-                      onChange={(e) => setEditDraft(e.target.value)}
+                    <div
+                      className="flex flex-col items-center gap-1.5 w-full"
                       onClick={(e) => e.stopPropagation()}
-                      onBlur={commitEdit}
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === "Enter") commitEdit();
-                        if (e.key === "Escape") setEditingField(null);
-                      }}
-                      className="font-body font-bold leading-tight px-4 text-center bg-white/15 rounded-xl border border-white/30 outline-none text-white w-full"
-                      style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
-                    />
+                      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) commitEdit(); }}
+                    >
+                      <input
+                        autoFocus
+                        value={editLatinDraft}
+                        onChange={(e) => setEditLatinDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter") commitEdit();
+                          if (e.key === "Escape") setEditingField(null);
+                        }}
+                        placeholder="Latin transcription"
+                        className="px-3 text-center bg-white/10 rounded-lg border border-white/20 outline-none text-white/80 text-lg sm:text-xl italic w-full"
+                      />
+                      <input
+                        value={editDraft}
+                        onChange={(e) => setEditDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter") commitEdit();
+                          if (e.key === "Escape") setEditingField(null);
+                        }}
+                        className="font-body font-bold leading-tight px-4 text-center bg-white/15 rounded-xl border border-white/30 outline-none text-white w-full"
+                        style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
+                      />
+                    </div>
                   ) : (
                     <div className="flex items-start justify-center gap-2">
                       <div className="relative flex flex-col items-center">
@@ -694,7 +740,7 @@ export function FlashcardView(props: FlashcardViewProps) {
                           ref={backWordRef}
                           className="font-body text-white font-bold leading-tight px-2"
                           style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
-                          onDoubleClick={(e) => { e.stopPropagation(); startEdit("english", word.english); }}
+                          onDoubleClick={(e) => { e.stopPropagation(); startEdit("english", word.english, backTranscription); }}
                           title={onEditWord ? "Double-click to edit" : undefined}
                         >
                           {displayedTranslation}
@@ -721,7 +767,7 @@ export function FlashcardView(props: FlashcardViewProps) {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={(e) => { e.stopPropagation(); startEdit("english", word.english); }}
+                                onClick={(e) => { e.stopPropagation(); startEdit("english", word.english, backTranscription); }}
                                 className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
                               >
                                 <Pencil className="w-3.5 h-3.5" />

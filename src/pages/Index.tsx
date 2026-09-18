@@ -613,10 +613,10 @@ const Index = () => {
               const next: typeof patch = { ...patch };
               // Keep the multi-language map in sync when the translation is edited
               if (patch.english !== undefined) {
-                next.values = { ...(source?.values || {}), [vocabulary.translationLang]: patch.english };
+                next.values = { ...(source?.values || {}), ...(patch.values || {}), [vocabulary.translationLang]: patch.english };
               }
               if (patch.chinese !== undefined) {
-                next.values = { ...(source?.values || {}), ...(next.values || {}), [vocabulary.studyLang]: patch.chinese };
+                next.values = { ...(source?.values || {}), ...(patch.values || {}), [vocabulary.studyLang]: patch.chinese };
               }
               vocabulary.updateWord(activeWord.id, next);
               // Persist the edit back into the source .xlsx (debounced)
