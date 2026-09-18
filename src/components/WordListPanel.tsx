@@ -170,6 +170,15 @@ export function WordListPanel({
   const [topicFilters, setTopicFilters] = useState<Set<TopicFilter>>(new Set(loaded?.topicFilters ?? []));
   type SenseFilter = "target-only" | "needs-review";
   const [senseFilters, setSenseFilters] = useState<Set<SenseFilter>>(new Set());
+  const [expandedLatin, setExpandedLatin] = useState<Set<string>>(new Set());
+
+  const toggleLatin = (id: string) => {
+    setExpandedLatin((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     try {
