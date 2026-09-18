@@ -17,6 +17,7 @@ import {
   Trash2,
   Palette,
   FileSpreadsheet,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,6 +61,8 @@ interface CompactToolbarProps {
   /** Pick a level from a built-in library (New HSK, English Dictionary) */
   onSelectBuiltIn: (libraryId: string, level: string) => void;
   loadingBuiltIn?: string | null;
+  /** Open the AI topic-deck generator */
+  onCreateTopicDeck?: () => void;
   /** Multi-language selection */
   availableLanguages: string[];
   studyLang: string;
@@ -220,6 +223,26 @@ export function CompactToolbar(props: CompactToolbarProps) {
           </DropdownMenu>
         )}
 
+
+        {/* AI topic deck */}
+        {props.onCreateTopicDeck && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border-amber-400 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950"
+                onClick={props.onCreateTopicDeck}
+                aria-label="Create a deck with AI"
+              >
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Create a deck with AI from any topic</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
 
         {/* Upload */}
         <Tooltip>
