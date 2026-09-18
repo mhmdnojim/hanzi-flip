@@ -580,13 +580,13 @@ export function FlashcardView(props: FlashcardViewProps) {
                     </div>
                   ) : (
                     <div className="flex items-start justify-center gap-2">
-                      <div className="relative flex flex-col items-center">
+                      <div className="relative inline-flex flex-col items-center">
                         {/* Transcription floats above the word so toggling it never shifts the layout */}
                         {showPinyin && word.pinyin && (
                           <motion.p
                             initial={{ opacity: 0, y: -6 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-center text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
                           >
                             {displayedPinyin}
                           </motion.p>
@@ -726,12 +726,12 @@ export function FlashcardView(props: FlashcardViewProps) {
                     </div>
                   ) : (
                     <div className="flex items-start justify-center gap-2">
-                      <div className="relative flex flex-col items-center">
+                      <div className="relative inline-flex flex-col items-center">
                         {showPinyin && backTranscription && (
                           <motion.p
                             initial={{ opacity: 0, y: -6 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-center text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
                           >
                             {backTranscription}
                           </motion.p>
