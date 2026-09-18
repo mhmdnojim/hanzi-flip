@@ -489,7 +489,7 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
           </div>
 
           {/* Top Right: Scoring + Favorite */}
-          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-1.5 sm:gap-2 z-30">
+          <div className="absolute top-10 right-3 sm:top-12 sm:right-4 flex items-center gap-1.5 sm:gap-2 z-30">
             <Tooltip>
               <TooltipTrigger asChild>
                 <button onClick={(e) => { e.stopPropagation(); onIncorrect(); }}
