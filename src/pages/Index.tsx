@@ -31,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const { toast } = useToast();
+  const flashcardRef = useRef<FlashcardViewHandle>(null);
   const [isFlipped, setIsFlipped] = useState(false);
   const [showPinyin, setShowPinyin] = useState(true);
   const [showChineseFirst, setShowChineseFirst] = useState(true);
