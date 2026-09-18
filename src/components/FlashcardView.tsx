@@ -790,27 +790,25 @@ export function FlashcardView(props: FlashcardViewProps) {
                       Add example translation
                     </button>
                   )}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button onClick={(e) => { e.stopPropagation(); onSpeakEnglish(); }}
-                        className="mt-3 p-2 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
-                        <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Speak {translationLabel}</p></TooltipContent>
-                  </Tooltip>
+                  <div className="mt-3 flex flex-wrap items-center justify-center gap-2 max-w-[92%]" onClick={(e) => e.stopPropagation()}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button onClick={(e) => { e.stopPropagation(); onSpeakEnglish(); }}
+                          className="p-2 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors shrink-0">
+                          <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Speak {translationLabel}</p></TooltipContent>
+                    </Tooltip>
 
-                  {/* Show extra columns on the back */}
-                  {visibleExtraColumns(word.extraColumns).length > 0 && (
-                    <div className="mt-4 max-w-[90%] sm:max-w-[80%] flex flex-wrap justify-center gap-1.5 text-left" onClick={(e) => e.stopPropagation()}>
-                      {visibleExtraColumns(word.extraColumns).map(([k, v]) => (
-                        <div key={k} className="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/20 flex items-baseline gap-2 whitespace-nowrap">
-                          <span className="text-[10px] uppercase tracking-wider text-white/60 whitespace-nowrap">{k}</span>
-                          <span className="text-xs sm:text-sm text-white/90 whitespace-nowrap">{v}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                    {/* Show extra columns on the back */}
+                    {visibleExtraColumns(word.extraColumns).map(([k, v]) => (
+                      <div key={k} className="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/20 flex items-baseline gap-2 whitespace-nowrap">
+                        <span className="text-[10px] uppercase tracking-wider text-white/60 whitespace-nowrap">{k}</span>
+                        <span className="text-xs sm:text-sm text-white/90 whitespace-nowrap">{v}</span>
+                      </div>
+                    ))}
+                  </div>
                 </>
               )}
             </motion.div>
