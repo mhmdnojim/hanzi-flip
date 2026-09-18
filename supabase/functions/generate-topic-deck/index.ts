@@ -7,6 +7,8 @@ interface Body {
   backLanguage: string;
   /** e.g. "Pinyin" for Chinese, "Transliteration" for Arabic — empty when the script is Latin */
   romanizationLabel?: string;
+  /** Words the topic deck already has — never repeat these */
+  existingWords?: string[];
 }
 
 interface GeneratedWord {
