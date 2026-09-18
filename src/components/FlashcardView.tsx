@@ -650,7 +650,7 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button onClick={(e) => { e.stopPropagation(); onSpeakChinese(); }}
-                        className="mt-3 p-2 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
+                        className="mt-12 p-2 sm:p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
                         <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </button>
                     </TooltipTrigger>
