@@ -746,22 +746,6 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
                         </p>
                       </div>
                       <div className="flex flex-col gap-1.5 mt-1 shrink-0">
-                        {onTogglePinyin && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onTogglePinyin(); }}
-                                className={cn(
-                                  "p-1.5 rounded-full transition-colors",
-                                  showPinyin ? "bg-pink-500/80 text-white" : "bg-white/20 hover:bg-white/30 text-white"
-                                )}
-                              >
-                                <TypeIcon className="w-3.5 h-3.5" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>{showPinyin ? "Hide" : "Show"} Latin transcription</p></TooltipContent>
-                          </Tooltip>
-                        )}
                         {onEditWord && (
                           <Tooltip>
                             <TooltipTrigger asChild>
