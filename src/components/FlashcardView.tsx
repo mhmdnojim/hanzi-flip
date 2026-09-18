@@ -548,29 +548,31 @@ export function FlashcardView(props: FlashcardViewProps) {
                       style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}
                     />
                   ) : (
-                    <div className="relative flex items-start justify-center gap-2">
-                      {/* Transcription floats above the word so toggling it never shifts the layout */}
-                      {showPinyin && word.pinyin && (
-                        <motion.p
-                          initial={{ opacity: 0, y: -6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
-                        >
-                          {displayedPinyin}
-                        </motion.p>
-                      )}
-                      <p ref={frontWordRef} className="font-chinese text-white font-bold leading-tight"
-                        style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}>
-                        {displayedFront}
-                      </p>
-                      {/* Sense note floats below so it never shifts the word */}
-                      {(word.senseNote || word.senseCount) && (
-                        <p className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap text-xs sm:text-sm text-white/70 italic pointer-events-none">
-                          {word.senseCount ? `${word.senseIndex}/${word.senseCount}` : ""}
-                          {word.senseCount && word.senseNote ? " · " : ""}
-                          {word.senseNote ? `(${word.senseNote})` : ""}
+                    <div className="flex items-start justify-center gap-2">
+                      <div className="relative flex flex-col items-center">
+                        {/* Transcription floats above the word so toggling it never shifts the layout */}
+                        {showPinyin && word.pinyin && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
+                          >
+                            {displayedPinyin}
+                          </motion.p>
+                        )}
+                        <p ref={frontWordRef} className="font-chinese text-white font-bold leading-tight"
+                          style={{ fontSize: `clamp(32px, ${fontSize}px, ${fontSize}px)` }}>
+                          {displayedFront}
                         </p>
-                      )}
+                        {/* Sense note floats below so it never shifts the word */}
+                        {(word.senseNote || word.senseCount) && (
+                          <p className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap text-xs sm:text-sm text-white/70 italic pointer-events-none">
+                            {word.senseCount ? `${word.senseIndex}/${word.senseCount}` : ""}
+                            {word.senseCount && word.senseNote ? " · " : ""}
+                            {word.senseNote ? `(${word.senseNote})` : ""}
+                          </p>
+                        )}
+                      </div>
                       <div className="flex flex-col gap-1.5 mt-1 shrink-0">
                         {onTogglePinyin && (
                           <Tooltip>
@@ -677,25 +679,27 @@ export function FlashcardView(props: FlashcardViewProps) {
                       style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
                     />
                   ) : (
-                    <div className="relative flex items-start justify-center gap-2">
-                      {showPinyin && backTranscription && (
-                        <motion.p
-                          initial={{ opacity: 0, y: -6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
+                    <div className="flex items-start justify-center gap-2">
+                      <div className="relative flex flex-col items-center">
+                        {showPinyin && backTranscription && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-white/80 font-medium pointer-events-none"
+                          >
+                            {backTranscription}
+                          </motion.p>
+                        )}
+                        <p
+                          ref={backWordRef}
+                          className="font-body text-white font-bold leading-tight px-2"
+                          style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
+                          onDoubleClick={(e) => { e.stopPropagation(); startEdit("english", word.english); }}
+                          title={onEditWord ? "Double-click to edit" : undefined}
                         >
-                          {backTranscription}
-                        </motion.p>
-                      )}
-                      <p
-                        ref={backWordRef}
-                        className="font-body text-white font-bold leading-tight px-2"
-                        style={{ fontSize: `clamp(24px, ${Math.min(fontSize, 80)}px, ${Math.min(fontSize, 80)}px)` }}
-                        onDoubleClick={(e) => { e.stopPropagation(); startEdit("english", word.english); }}
-                        title={onEditWord ? "Double-click to edit" : undefined}
-                      >
-                        {displayedTranslation}
-                      </p>
+                          {displayedTranslation}
+                        </p>
+                      </div>
                       <div className="flex flex-col gap-1.5 mt-1 shrink-0">
                         {onTogglePinyin && (
                           <Tooltip>
