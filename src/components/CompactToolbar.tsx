@@ -166,9 +166,6 @@ export function CompactToolbar(props: CompactToolbarProps) {
             </TooltipContent>
           </Tooltip>
           <DropdownMenuContent className="max-h-[70vh] overflow-y-auto">
-            <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Included libraries
-            </DropdownMenuLabel>
             {BUILT_IN_LIBRARIES.map((library) => (
               <DropdownMenuItem
                 key={library.id}
@@ -177,19 +174,6 @@ export function CompactToolbar(props: CompactToolbarProps) {
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">{library.name}</span>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              My files
-            </DropdownMenuLabel>
-            {props.decks.map((deck) => (
-              <DropdownMenuItem
-                key={deck.id}
-                onClick={() => props.onDeckChange(deck.id)}
-                className={cn("gap-2", deck.id === props.currentDeckId && "bg-accent")}
-              >
-                <span className="truncate">{deck.name}</span>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
