@@ -188,11 +188,18 @@ export function CompactToolbar(props: CompactToolbarProps) {
                 <span className="truncate">{library.name}</span>
               </DropdownMenuItem>
             ))}
+            <DropdownMenuItem
+              onClick={() => setLibraryId(TOPICS_LIBRARY_ID)}
+              className={cn("gap-2", isTopicsLibrary && "bg-accent")}
+            >
+              <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+              <span className="truncate">AI Topics</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Level selector for the chosen library */}
-        {activeLibrary && (
+        {/* Level / topic selector for the chosen library */}
+        {(activeLibrary || isTopicsLibrary) && (
           <DropdownMenu>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -202,32 +209,66 @@ export function CompactToolbar(props: CompactToolbarProps) {
                     size="sm"
                     className="h-8 sm:h-9 px-2 sm:px-3 gap-1 text-xs sm:text-sm rounded-full"
                   >
-                    <span className="truncate">{activeLevel ?? "Level"}</span>
+                    <span className="truncate">
+                      {isTopicsLibrary
+                        ? isTopicDeck(currentDeck)
+                          ? topicName(currentDeck)
+                          : "Topics"
+                        : activeLevel ?? "Level"}
+                    </span>
                     <ChevronDown className="w-3 h-3" />
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Select level</p>
+                <p>{isTopicsLibrary ? "Select topic" : "Select level"}</p>
               </TooltipContent>
             </Tooltip>
             <DropdownMenuContent className="max-h-[70vh] overflow-y-auto">
-              {activeLibrary.levels.map((level) => {
-                const key = `${activeLibrary.id}:${level}`;
-                return (
-                  <DropdownMenuItem
-                    key={level}
-                    onClick={() => props.onSelectBuiltIn(activeLibrary.id, level)}
-                    disabled={props.loadingBuiltIn === key}
-                    className={cn("gap-2", level === activeLevel && "bg-accent")}
-                  >
-                    <span className="truncate">{level}</span>
-                    {props.loadingBuiltIn === key && (
-                      <span className="ml-auto text-xs text-muted-foreground">loading…</span>
-                    )}
-                  </DropdownMenuItem>
-                );
-              })}
+              {isTopicsLibrary ? (
+                <>
+                  {props.onCreateTopicDeck && (
+                    <DropdownMenuItem
+                      onClick={props.onCreateTopicDeck}
+                      className="gap-2 text-amber-600 dark:text-amber-400"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">New topic…</span>
+                    </DropdownMenuItem>
+                  )}
+                  {topicDecks.length === 0 && (
+                    <DropdownMenuItem disabled className="text-muted-foreground">
+                      No topic decks yet
+                    </DropdownMenuItem>
+                  )}
+                  {topicDecks.map((deck) => (
+                    <DropdownMenuItem
+                      key={deck.id}
+                      onClick={() => props.onDeckChange(deck.id)}
+                      className={cn("gap-2", deck.id === props.currentDeckId && "bg-accent")}
+                    >
+                      <span className="truncate">{topicName(deck)}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              ) : (
+                activeLibrary!.levels.map((level) => {
+                  const key = `${activeLibrary!.id}:${level}`;
+                  return (
+                    <DropdownMenuItem
+                      key={level}
+                      onClick={() => props.onSelectBuiltIn(activeLibrary!.id, level)}
+                      disabled={props.loadingBuiltIn === key}
+                      className={cn("gap-2", level === activeLevel && "bg-accent")}
+                    >
+                      <span className="truncate">{level}</span>
+                      {props.loadingBuiltIn === key && (
+                        <span className="ml-auto text-xs text-muted-foreground">loading…</span>
+                      )}
+                    </DropdownMenuItem>
+                  );
+                })
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
