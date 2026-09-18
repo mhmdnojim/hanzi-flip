@@ -538,6 +538,7 @@ const Index = () => {
             onPrevious={handlePrevious}
             onToggleFavorite={() => vocabulary.toggleFavorite(activeWord.id)}
             showPinyin={showPinyin}
+            onTogglePinyin={() => setShowPinyin(!showPinyin)}
             showChineseFirst={showChineseFirst}
             fontSize={fontSize}
             onFontSizeChange={setFontSize}
