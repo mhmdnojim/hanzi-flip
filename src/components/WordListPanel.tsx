@@ -132,6 +132,8 @@ interface WordListPanelProps {
   onExcludedChange: (excluded: Set<string>) => void;
   currentWordId?: string;
   onJumpTo?: (wordId: string) => void;
+  studyLang?: string;
+  translationLang?: string;
   open: boolean;
   onClose: () => void;
 }
