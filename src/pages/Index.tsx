@@ -51,7 +51,10 @@ const Index = () => {
   }, []);
 
   const vocabulary = useVocabulary();
-  const audio = useAudio();
+  const audio = useAudio({
+    frontLocale: getLanguage(vocabulary.studyLang).locale,
+    backLocale: getLanguage(vocabulary.translationLang).locale,
+  });
 
   // ── Excluded words (word-list panel) ──
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
