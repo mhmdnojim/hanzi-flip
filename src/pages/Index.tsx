@@ -216,6 +216,7 @@ const Index = () => {
 
   // Pronounce on initial load or when vocabulary changes
   useEffect(() => {
+    if (!vocabulary.hydrated) return;
     if (activeWord && vocabulary.words.length > 0) {
       pronounceVisibleLanguage(activeWord, false);
     }
