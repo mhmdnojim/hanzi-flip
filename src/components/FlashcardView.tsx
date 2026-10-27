@@ -862,7 +862,7 @@ export const FlashcardView = forwardRef<FlashcardViewHandle, FlashcardViewProps>
                     <div className="flex items-center gap-1 sm:gap-1.5">
                       <span className="text-[10px] sm:text-xs text-white/70 whitespace-nowrap">Next:</span>
                       <div className="w-12 sm:w-16">
-                        <Slider value={[nextDelay]} min={1} max={10} step={0.5}
+                        <Slider value={[nextDelay]} min={1} max={30} step={0.5}
                           onValueChange={([v]) => onNextDelayChange(v)}
                           onClick={(e) => e.stopPropagation()} className="accent-primary" />
                       </div>
