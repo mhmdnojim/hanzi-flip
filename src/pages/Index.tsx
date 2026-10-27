@@ -11,6 +11,9 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { previewExcelFile, buildWordsFromMapping, type SheetPreview } from "@/utils/excelParser";
 import { parseSenseWorkbook } from "@/utils/senseWorkbook";
 import { getBuiltInLibrary, loadBuiltInLevel } from "@/lib/builtInLibraries";
+
+const DEFAULT_LIBRARY_ID = "new-hsk";
+const DEFAULT_LEVEL = "HSK2";
 import { ColumnMappingDialog } from "@/components/ColumnMappingDialog";
 import { useToast } from "@/hooks/use-toast";
 import { CustomSequenceStep } from "@/types/vocabulary";
@@ -51,7 +54,10 @@ const Index = () => {
   }, []);
 
   const vocabulary = useVocabulary();
-  const audio = useAudio();
+  const audio = useAudio({
+    frontLocale: getLanguage(vocabulary.studyLang).locale,
+    backLocale: getLanguage(vocabulary.translationLang).locale,
+  });
 
   // ── Excluded words (word-list panel) ──
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
@@ -210,6 +216,7 @@ const Index = () => {
 
   // Pronounce on initial load or when vocabulary changes
   useEffect(() => {
+    if (!vocabulary.hydrated) return;
     if (activeWord && vocabulary.words.length > 0) {
       pronounceVisibleLanguage(activeWord, false);
     }
@@ -355,6 +362,16 @@ const Index = () => {
     },
     [vocabulary, toast],
   );
+
+  // Open the New HSK library by default (instead of the small starter deck).
+  const defaultDeckCheckedRef = useRef(false);
+  useEffect(() => {
+    if (!vocabulary.hydrated || defaultDeckCheckedRef.current) return;
+    defaultDeckCheckedRef.current = true;
+    if (vocabulary.currentDeckId === "sample") {
+      void handleSelectBuiltIn(DEFAULT_LIBRARY_ID, DEFAULT_LEVEL);
+    }
+  }, [vocabulary.hydrated, vocabulary.currentDeckId, handleSelectBuiltIn]);
 
   // ── AI topic deck generator ──
   const [topicDialogOpen, setTopicDialogOpen] = useState(false);

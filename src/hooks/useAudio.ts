@@ -1,7 +1,15 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { VoiceType } from "@/types/vocabulary";
 import { supabase } from "@/integrations/supabase/client";
 import { detectLanguageCodeFromText } from "@/lib/detectLanguage";
+import { pickVoice } from "@/lib/voicePicker";
+
+interface UseAudioOptions {
+  /** BCP-47 locale of the card's front language (e.g. "zh-CN") */
+  frontLocale?: string;
+  /** BCP-47 locale of the card's back language (e.g. "en-US") */
+  backLocale?: string;
+}
 
 const SOUND_EFFECTS = {
   flip: "/sounds/flip.mp3",
@@ -10,7 +18,7 @@ const SOUND_EFFECTS = {
   navigate: "/sounds/navigate.mp3",
 };
 
-export function useAudio() {
+export function useAudio({ frontLocale, backLocale }: UseAudioOptions = {}) {
   const [voiceType, setVoiceType] = useState<VoiceType>("free");
   const [voiceSpeed, setVoiceSpeed] = useState(1);
   const [voiceMuted, setVoiceMuted] = useState(false);
@@ -18,6 +26,20 @@ export function useAudio() {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
+
+  // Browser voices (Google / Microsoft) load asynchronously — keep the list fresh.
+  useEffect(() => {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    const load = () => {
+      const list = synth.getVoices();
+      if (list.length) voicesRef.current = list;
+    };
+    load();
+    synth.addEventListener?.("voiceschanged", load);
+    return () => synth.removeEventListener?.("voiceschanged", load);
+  }, []);
 
   const playFreeTTS = useCallback(
     (text: string, lang: string): Promise<void> => {
@@ -36,11 +58,12 @@ export function useAudio() {
         utterance.lang = lang;
         utterance.rate = voiceSpeed;
         
-        // Try to find a voice for the language
-        const voices = window.speechSynthesis.getVoices();
-        const voice = voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+        // Pick the best Google / Microsoft voice with the matching accent
+        if (!voicesRef.current.length) voicesRef.current = window.speechSynthesis.getVoices();
+        const voice = pickVoice(voicesRef.current, lang);
         if (voice) {
           utterance.voice = voice;
+          utterance.lang = voice.lang;
         }
         
         utterance.onend = () => {
@@ -129,16 +152,16 @@ export function useAudio() {
     [voiceType, playFreeTTS, playPremiumTTS]
   );
 
-  /** Speak the "original" side. Auto-detects language from the text. */
+  /** Speak the front side in the front language's voice. */
   const speakChinese = useCallback(
-    (text: string) => speak(text, detectLanguageCodeFromText(text)),
-    [speak]
+    (text: string) => speak(text, frontLocale || detectLanguageCodeFromText(text)),
+    [speak, frontLocale]
   );
 
-  /** Speak the "translation" side. Auto-detects language from the text. */
+  /** Speak the back side in the back language's voice. */
   const speakEnglish = useCallback(
-    (text: string) => speak(text, detectLanguageCodeFromText(text)),
-    [speak]
+    (text: string) => speak(text, backLocale || detectLanguageCodeFromText(text)),
+    [speak, backLocale]
   );
 
   const stopSpeaking = useCallback(() => {

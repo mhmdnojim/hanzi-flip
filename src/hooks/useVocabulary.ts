@@ -313,6 +313,7 @@ export function useVocabulary() {
   }, [currentDeck]);
 
   return {
+    hydrated,
     decks,
     currentDeck,
     currentDeckId,
